@@ -1,0 +1,14 @@
+.env
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+data/cache/
+data/input/
+data/output/
+data/app/*.csv
+!data/app/screener_results_kr.csv
+notebooks/
+Untitled.ipynb
+TASKS.md

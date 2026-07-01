@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=69.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ncav-screener"
+version = "0.1.0"
+description = "Korean stock NCAV screener using DART and pykrx"
+requires-python = ">=3.11"
+dependencies = [
+  "requests>=2.32.0",
+  "pandas>=2.2.0",
+  "pykrx>=1.0.48",
+  "python-dotenv>=1.0.1",
+  "streamlit>=1.36.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.2.0"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
