@@ -50,3 +50,17 @@ KRX 시세, PER/PBR, DART 재무제표 원본이 바뀌면 `data/input/` 안의 
 ## 배포 앱 갱신
 
 Streamlit Community Cloud에 배포한 뒤에는 로컬에서 새로 만든 `data/app/screener_results_kr.csv`를 GitHub에 올려야 배포 앱도 새 데이터를 보게 됩니다.
+
+## Anaconda Prompt에서 실행할 명령어
+
+새 DART/KRX 원본 파일을 `data/input/`에 넣은 뒤, Anaconda Prompt에서 아래 순서대로 실행합니다.
+
+```bat
+cd /d C:\ClaudeSpace\ncav-screener
+update_data.bat
+git add data/app/screener_results_kr.csv
+git commit -m "Update screener data"
+git push
+```
+
+기존 원본 파일을 바꾸지 않고 실행하면 결과 CSV도 거의 그대로 나옵니다. 먼저 `data/input/`의 DART/KRX 파일을 최신 기준으로 교체했는지 확인하세요.
