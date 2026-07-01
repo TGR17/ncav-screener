@@ -1,5 +1,7 @@
 # NCAV Screener
 
+[배포 앱 바로가기](https://ncav-screener-kjsj5fvtgmac9t8swzbfx.streamlit.app)
+
 한국 주식시장에서 NCAV, EV/EBIT, F-score, ROE, ROA 등 가치/퀄리티 지표를 함께 확인하는 Streamlit 앱입니다.
 
 이 앱은 실시간 조회 앱이 아니라, DART/KRX 원본 파일로 미리 만든 CSV를 읽어서 필터링하는 방식입니다.
