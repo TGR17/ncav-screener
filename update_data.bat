@@ -27,6 +27,16 @@ if not exist "data\app" mkdir "data\app"
 echo Updating NCAV Screener data...
 echo.
 
+if exist "data\input\krx_raw.csv" (
+    "%PYTHON_EXE%" -c "from pathlib import Path; from ncav_screener.market_data import convert_krx_raw_to_market_data; convert_krx_raw_to_market_data(Path(r'data\input\krx_raw.csv'), Path(r'data\input\market_data.csv'), source_date='2026-07-03'); print('Updated market data: data\\input\\market_data.csv')"
+    if errorlevel 1 (
+        echo.
+        echo KRX raw market data conversion failed.
+        pause
+        exit /b 1
+    )
+)
+
 "%PYTHON_EXE%" -m ncav_screener.cli bulk-ncav ^
     --with-ev-ebit ^
     --with-f-score ^

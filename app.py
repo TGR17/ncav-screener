@@ -15,6 +15,7 @@ DEFAULT_CANDIDATES = ROOT / "data" / "app" / "screener_results_kr.csv"
 LOCAL_OUTPUT_CANDIDATES = ROOT / "data" / "app" / "bulk_all_results_fscore_kr.csv"
 MARKET_DATA_PATH = INPUT_DIR / "market_data.csv"
 FUNDAMENTALS_PATH = INPUT_DIR / "krx_fundamental.csv"
+KRX_DATA_DATE_TEXT = "2026-07-03"
 
 COL_CODE = "종목코드"
 COL_NAME = "종목명"
@@ -593,8 +594,8 @@ def render_data_info(path: Path | None, uploaded: bool) -> None:
         c1, c2, c3, c4 = st.columns(4)
         c1.metric("DART 재무제표", "2026 1Q / 2025")
         c2.metric("DART 파일 생성일", dart_date_text)
-        c3.metric("KRX 투자지표", format_file_time(FUNDAMENTALS_PATH))
-        c4.metric("KRX 시세", format_file_time(MARKET_DATA_PATH))
+        c3.metric("KRX 투자지표", KRX_DATA_DATE_TEXT)
+        c4.metric("KRX 시세", KRX_DATA_DATE_TEXT)
 
         st.caption(
             "재무제표: DART 2026년 1분기 재무제표와 "
