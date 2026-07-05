@@ -427,8 +427,8 @@ METRIC_HELP = {
     "EPS": "주당순이익입니다. 회사 순이익을 주식 수로 나눈 값입니다.",
     "배당수익률": "현재 주가 대비 배당금 비율입니다.",
     "F-score": "Piotroski F-score를 변형한 재무 건전성 점수입니다. 현재 데이터에서는 신주 발행 항목을 제외해 최대 8점입니다.",
-    "ROE": "자기자본 대비 순이익입니다. 회사가 주주자본을 얼마나 효율적으로 이익으로 바꾸는지 보여줍니다.",
-    "ROA": "총자산 대비 순이익입니다. 회사가 전체 자산을 얼마나 효율적으로 이익으로 바꾸는지 보여줍니다.",
+    "ROE": "최근 12개월 순이익을 평균 자기자본으로 나눈 값입니다. 회사가 주주자본을 얼마나 효율적으로 이익으로 바꾸는지 보여줍니다.",
+    "ROA": "최근 12개월 순이익을 평균 총자산으로 나눈 값입니다. 회사가 전체 자산을 얼마나 효율적으로 이익으로 바꾸는지 보여줍니다.",
     "영업이익률": "매출 대비 영업이익입니다. 본업에서 매출을 얼마나 이익으로 남기는지 보여줍니다.",
     "BPS": "주당순자산입니다. 회사 순자산을 주식 수로 나눈 값입니다.",
 }
@@ -459,7 +459,7 @@ def render_f_score_breakdown(row: pd.Series) -> None:
             "F1",
             "ROA 양수",
             COL_F_ROA_POSITIVE,
-            f"ROA {format_percent(row.get('roa_current'))}, 순이익 {format_won_plain(row.get('net_income_current'))}",
+            f"분기 ROA {format_percent(row.get('roa_quarter_current'))}, 순이익 {format_won_plain(row.get('net_income_current'))}",
             "ROA가 0보다 크면 1점",
         ),
         (
@@ -473,7 +473,7 @@ def render_f_score_breakdown(row: pd.Series) -> None:
             "F3",
             "ROA 개선",
             COL_F_ROA_UP,
-            f"현재 ROA {format_percent(row.get('roa_current'))} / 전년 ROA {format_percent(row.get('roa_previous'))}",
+            f"현재 분기 ROA {format_percent(row.get('roa_quarter_current'))} / 전년 분기 ROA {format_percent(row.get('roa_previous'))}",
             "현재 ROA가 전년 동기보다 높으면 1점",
         ),
         (
@@ -599,7 +599,7 @@ def render_data_info(path: Path | None, uploaded: bool) -> None:
         st.caption(
             "재무제표: DART 2026년 1분기 재무제표와 "
             "2025년 연간/분기 손익계산서를 사용했습니다. "
-            "ROE, ROA, 영업이익률, F-score도 이 재무제표에서 계산했습니다."
+            "ROE/ROA는 TTM 순이익과 평균 자본/자산 기준으로, 영업이익률과 F-score는 분기 재무제표 기준으로 계산했습니다."
         )
         st.caption(
             "시장 데이터: 시가총액과 거래 관련 값은 KRX 시세 파일을 사용했고, "
@@ -743,7 +743,7 @@ def sidebar_filters(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, object]]:
             "ROE 필터 사용",
             value=False,
             help=(
-                "켜면 자기자본 대비 순이익이 일정 수준 이상인 종목만 봅니다. "
+                "켜면 최근 12개월 순이익 대비 평균 자기자본 수익률이 일정 수준 이상인 종목만 봅니다. "
                 "ROE가 높을수록 주주자본을 이익으로 잘 바꾸는 회사로 볼 수 있습니다."
             ),
         )
@@ -755,7 +755,7 @@ def sidebar_filters(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, object]]:
                 max_value=50.0,
                 value=0.0,
                 step=1.0,
-                help="ROE는 순이익 / 자기자본입니다. 0%보다 높으면 자기자본 대비 이익이 플러스라는 뜻입니다.",
+                help="ROE는 최근 12개월 순이익 / 평균 자기자본입니다. 0%보다 높으면 자기자본 대비 이익이 플러스라는 뜻입니다.",
             )
             filter_state["ROE"] = f"{roe_min:.1f}% 이상"
             filtered = filtered.loc[filtered[COL_ROE] * 100 >= roe_min]
@@ -765,7 +765,7 @@ def sidebar_filters(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, object]]:
             "ROA 필터 사용",
             value=False,
             help=(
-                "켜면 총자산 대비 순이익이 일정 수준 이상인 종목만 봅니다. "
+                "켜면 최근 12개월 순이익 대비 평균 총자산 수익률이 일정 수준 이상인 종목만 봅니다. "
                 "ROA가 높을수록 전체 자산을 이익으로 잘 바꾸는 회사로 볼 수 있습니다."
             ),
         )
@@ -777,7 +777,7 @@ def sidebar_filters(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, object]]:
                 max_value=30.0,
                 value=0.0,
                 step=0.5,
-                help="ROA는 순이익 / 총자산입니다. 자산을 얼마나 효율적으로 이익화하는지 보여줍니다.",
+                help="ROA는 최근 12개월 순이익 / 평균 총자산입니다. 자산을 얼마나 효율적으로 이익화하는지 보여줍니다.",
             )
             filter_state["ROA"] = f"{roa_min:.1f}% 이상"
             filtered = filtered.loc[filtered[COL_ROA] * 100 >= roa_min]

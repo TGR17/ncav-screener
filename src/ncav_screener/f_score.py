@@ -7,6 +7,7 @@ import pandas as pd
 
 from .dart_bulk import (
     ACCOUNT_CODE_COLUMN,
+    ANNUAL_CURRENT_PERIOD_COLUMN,
     COMPANY_NAME_COLUMN,
     CURRENT_ASSETS_CODE,
     CURRENT_PERIOD_COLUMN,
@@ -33,6 +34,7 @@ def build_f_score_from_bulk(
     *,
     current_balance_sheet_path: Path,
     previous_balance_sheet_path: Path,
+    annual_income_path: Path | Sequence[Path],
     current_income_path: Path | Sequence[Path],
     previous_income_path: Path | Sequence[Path],
     current_cash_flow_path: Path,
@@ -70,6 +72,11 @@ def build_f_score_from_bulk(
         Q1_CUMULATIVE_COLUMN,
         {NET_INCOME_CODE, REVENUE_CODE, GROSS_PROFIT_CODE, OPERATING_INCOME_CODE},
     )
+    annual_income = _build_statement_values_with_fallback(
+        annual_income_path,
+        ANNUAL_CURRENT_PERIOD_COLUMN,
+        {NET_INCOME_CODE},
+    )
     current_cf = _build_statement_values(
         current_cash_flow_path,
         (Q1_CUMULATIVE_COLUMN, CF_Q1_COLUMN),
@@ -84,11 +91,22 @@ def build_f_score_from_bulk(
     current = _combine_period(current_bs, current_income, current_cf, "current")
     previous = _combine_period(previous_bs, previous_income, previous_cf, "previous")
     output = current.merge(previous, on="ticker", how="outer", suffixes=("", "_previous_name"))
+    annual = annual_income.rename(columns={NET_INCOME_CODE: "net_income_annual"})
+    output = output.merge(annual[["ticker", "net_income_annual"]], on="ticker", how="left")
 
-    output["roa_current"] = _safe_divide(output["net_income_current"], output["assets_current"])
+    output["net_income_ttm"] = (
+        output["net_income_annual"]
+        - output["net_income_previous"]
+        + output["net_income_current"]
+    )
+    output["average_assets_ttm"] = (output["assets_current"] + output["assets_previous"]) / 2
+    output["average_equity_ttm"] = (output["equity_current"] + output["equity_previous"]) / 2
+    output["roa_quarter_current"] = _safe_divide(output["net_income_current"], output["assets_current"])
     output["roa_previous"] = _safe_divide(output["net_income_previous"], output["assets_previous"])
-    output["roe_current"] = _safe_divide(output["net_income_current"], output["equity_current"])
+    output["roe_quarter_current"] = _safe_divide(output["net_income_current"], output["equity_current"])
     output["roe_previous"] = _safe_divide(output["net_income_previous"], output["equity_previous"])
+    output["roa_current"] = _safe_divide(output["net_income_ttm"], output["average_assets_ttm"])
+    output["roe_current"] = _safe_divide(output["net_income_ttm"], output["average_equity_ttm"])
     output["operating_margin_current"] = _safe_divide(
         output["operating_income_current"],
         output["revenue_current"],
@@ -125,9 +143,13 @@ def build_f_score_from_bulk(
     )
 
     criteria = {
-        "f_roa_positive": _criterion(output["roa_current"] > 0, output["roa_current"]),
+        "f_roa_positive": _criterion(output["roa_quarter_current"] > 0, output["roa_quarter_current"]),
         "f_cfo_positive": _criterion(output["cfo_current"] > 0, output["cfo_current"]),
-        "f_roa_up": _criterion(output["roa_current"] > output["roa_previous"], output["roa_current"], output["roa_previous"]),
+        "f_roa_up": _criterion(
+            output["roa_quarter_current"] > output["roa_previous"],
+            output["roa_quarter_current"],
+            output["roa_previous"],
+        ),
         "f_cfo_gt_net_income": _criterion(
             output["cfo_current"] > output["net_income_current"],
             output["cfo_current"],
@@ -170,13 +192,19 @@ def build_f_score_from_bulk(
         "f_score_ratio",
         *criterion_columns,
         "roa_current",
+        "roa_quarter_current",
         "roa_previous",
         "roe_current",
+        "roe_quarter_current",
         "roe_previous",
         "operating_margin_current",
         "operating_margin_previous",
         "operating_income_current",
         "revenue_current",
+        "net_income_annual",
+        "net_income_ttm",
+        "average_assets_ttm",
+        "average_equity_ttm",
         "cfo_current",
         "net_income_current",
         "debt_ratio_current",

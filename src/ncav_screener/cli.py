@@ -223,6 +223,10 @@ def main() -> None:
                 args.input_dir,
                 ("2025_1\ubd84\uae30\ubcf4\uace0\uc11c", "\uc7ac\ubb34\uc0c1\ud0dc\ud45c", "\uc5f0\uacb0"),
             )
+            f_score_annual_income = [args.annual_income] if args.annual_income else find_income_files_with_separate_fallback(
+                args.input_dir,
+                ("2025_\uc0ac\uc5c5\ubcf4\uace0\uc11c",),
+            )
             current_income = [args.current_income] if args.current_income else find_income_files_with_separate_fallback(
                 args.input_dir,
                 ("2026_1\ubd84\uae30\ubcf4\uace0\uc11c",),
@@ -242,6 +246,7 @@ def main() -> None:
             f_score = build_f_score_from_bulk(
                 current_balance_sheet_path=current_balance_sheet,
                 previous_balance_sheet_path=previous_balance_sheet,
+                annual_income_path=f_score_annual_income,
                 current_income_path=current_income,
                 previous_income_path=previous_income,
                 current_cash_flow_path=current_cash_flow,
