@@ -631,6 +631,24 @@ def sidebar_filters(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, object]]:
     if selected_industries:
         filtered = filtered.loc[filtered[COL_INDUSTRY].isin(selected_industries)]
 
+    market_cap_enabled = st.sidebar.checkbox(
+        "시가총액 필터 사용",
+        value=True,
+        help="켜면 일정 시가총액 이상인 종목만 봅니다. 너무 작은 종목은 거래량, 변동성, 상장 유지 리스크가 클 수 있습니다.",
+    )
+    filter_state["시가총액"] = "미사용"
+    if market_cap_enabled:
+        market_cap_min_uk = st.sidebar.number_input(
+            "시가총액 최소(억원)",
+            min_value=0,
+            max_value=1_000_000,
+            value=200,
+            step=50,
+            help="억원 단위로 입력합니다. 예: 200은 시가총액 200억 원 이상을 뜻합니다.",
+        )
+        filter_state["시가총액"] = f"{market_cap_min_uk:,}억원 이상"
+        filtered = filtered.loc[filtered[COL_MARKET_CAP] >= market_cap_min_uk * 100_000_000]
+
     sidebar_section("밸류 팩터")
     ncav_enabled = st.sidebar.checkbox(
         "NCAV 필터 사용",
