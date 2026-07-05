@@ -252,6 +252,23 @@ def apply_theme(theme: str) -> None:
             border: none !important;
             box-shadow: none !important;
         }}
+        [data-testid="stNumberInput"] [data-baseweb="input"] {{
+            border: 1px solid {colors["input_border"]} !important;
+            border-radius: 6px !important;
+            background-color: {colors["input_bg"]} !important;
+            box-shadow: 0 0 0 1px {colors["input_border"]} inset !important;
+            overflow: hidden;
+        }}
+        [data-testid="stNumberInput"] [data-baseweb="input"] input {{
+            border: none !important;
+            box-shadow: none !important;
+            background-color: {colors["input_bg"]} !important;
+        }}
+        [data-testid="stNumberInput"] button {{
+            background-color: {colors["input_bg"]} !important;
+            border-color: {colors["input_border"]} !important;
+            color: {colors["text"]} !important;
+        }}
         [data-baseweb="input"] > div:focus-within,
         [data-baseweb="select"] > div:focus-within {{
             border-color: #2563eb !important;
