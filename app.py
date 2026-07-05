@@ -45,6 +45,7 @@ COL_DIVIDEND_YIELD = "배당수익률"
 COL_F_SCORE = "F-score"
 COL_ROE = "ROE"
 COL_ROA = "ROA"
+COL_ROIC = "ROIC"
 COL_OPERATING_MARGIN = "영업이익률"
 COL_DATA_STATUS = "데이터 상태"
 COL_DATA_NOTE = "계산 제외/누락 사유"
@@ -312,6 +313,7 @@ def normalize_frame(frame: pd.DataFrame) -> pd.DataFrame:
         COL_F_SCORE,
         COL_ROE,
         COL_ROA,
+        COL_ROIC,
         COL_OPERATING_MARGIN,
         *MONEY_COLUMNS,
         COL_CLOSE,
@@ -328,7 +330,7 @@ def add_display_columns(df: pd.DataFrame) -> pd.DataFrame:
     for column in MONEY_COLUMNS:
         if column in output.columns:
             output[f"{column}(억원)"] = output[column] / 100_000_000
-    for column in [COL_ROE, COL_ROA, COL_OPERATING_MARGIN]:
+    for column in [COL_ROE, COL_ROA, COL_ROIC, COL_OPERATING_MARGIN]:
         if column in output.columns:
             output[f"{column}(%)"] = output[column] * 100
     return output
@@ -447,6 +449,7 @@ METRIC_HELP = {
     "F-score": "Piotroski F-score를 변형한 재무 건전성 점수입니다. 현재 데이터에서는 신주 발행 항목을 제외해 최대 8점입니다.",
     "ROE": "최근 12개월 순이익을 평균 자기자본으로 나눈 값입니다. 회사가 주주자본을 얼마나 효율적으로 이익으로 바꾸는지 보여줍니다.",
     "ROA": "최근 12개월 순이익을 평균 총자산으로 나눈 값입니다. 회사가 전체 자산을 얼마나 효율적으로 이익으로 바꾸는지 보여줍니다.",
+    "ROIC": "최근 12개월 영업이익을 투하자본으로 나눈 세전 ROIC 근사치입니다. 투하자본 대비 본업 수익성을 보는 지표입니다.",
     "영업이익률": "매출 대비 영업이익입니다. 본업에서 매출을 얼마나 이익으로 남기는지 보여줍니다.",
     "BPS": "주당순자산입니다. 회사 순자산을 주식 수로 나눈 값입니다.",
 }
@@ -617,7 +620,7 @@ def render_data_info(path: Path | None, uploaded: bool) -> None:
         st.caption(
             "재무제표: DART 2026년 1분기 재무제표와 "
             "2025년 연간/분기 손익계산서를 사용했습니다. "
-            "ROE/ROA는 TTM 순이익과 평균 자본/자산 기준으로, 영업이익률과 F-score는 분기 재무제표 기준으로 계산했습니다."
+            "ROE/ROA는 TTM 순이익과 평균 자본/자산 기준으로, ROIC는 TTM EBIT과 투하자본 기준으로 계산했습니다. 영업이익률과 F-score는 분기 재무제표 기준입니다."
         )
         st.caption(
             "시장 데이터: 시가총액과 거래 관련 값은 KRX 시세 파일을 사용했고, "
@@ -818,6 +821,28 @@ def sidebar_filters(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, object]]:
             filter_state["ROA"] = f"{roa_min:.1f}% 이상"
             filtered = filtered.loc[filtered[COL_ROA] * 100 >= roa_min]
 
+    if COL_ROIC in filtered.columns and filtered[COL_ROIC].notna().any():
+        roic_enabled = st.sidebar.checkbox(
+            "ROIC 필터 사용",
+            value=False,
+            help=(
+                "켜면 투하자본 대비 영업이익률이 일정 수준 이상인 종목만 봅니다. "
+                "현재 ROIC는 TTM EBIT을 투하자본으로 나눈 세전 근사치입니다."
+            ),
+        )
+        filter_state["ROIC"] = "미사용"
+        if roic_enabled:
+            roic_min = st.sidebar.slider(
+                "ROIC 최소(%)",
+                min_value=-50.0,
+                max_value=50.0,
+                value=0.0,
+                step=1.0,
+                help="ROIC는 TTM EBIT / 투하자본입니다. 투하자본 대비 본업 수익성을 보여주는 세전 근사치입니다.",
+            )
+            filter_state["ROIC"] = f"{roic_min:.1f}% 이상"
+            filtered = filtered.loc[filtered[COL_ROIC] * 100 >= roic_min]
+
     if COL_F_SCORE in filtered.columns and filtered[COL_F_SCORE].notna().any():
         st.sidebar.markdown("F-score")
         min_score = st.sidebar.slider(
@@ -888,6 +913,7 @@ def render_table(df: pd.DataFrame) -> None:
         COL_F_SCORE,
         f"{COL_ROE}(%)",
         f"{COL_ROA}(%)",
+        f"{COL_ROIC}(%)",
         f"{COL_OPERATING_MARGIN}(%)",
         COL_PER,
         COL_PBR,
@@ -945,22 +971,23 @@ def render_detail(df: pd.DataFrame) -> None:
     render_metric(c8, "배당수익률", format_ratio(row.get(COL_DIVIDEND_YIELD)))
 
     st.markdown("#### 퀄리티 팩터")
-    c9, c10, c11, c12 = st.columns(4)
+    c9, c10, c11, c12, c13 = st.columns(5)
     render_metric(c9, "F-score", f"{format_number(row.get(COL_F_SCORE))} / 8")
     render_metric(c10, "ROE", format_percent(row.get(COL_ROE)))
     render_metric(c11, "ROA", format_percent(row.get(COL_ROA)))
-    render_metric(c12, "영업이익률", format_percent(row.get(COL_OPERATING_MARGIN)))
+    render_metric(c12, "ROIC", format_percent(row.get(COL_ROIC)))
+    render_metric(c13, "영업이익률", format_percent(row.get(COL_OPERATING_MARGIN)))
     render_f_score_breakdown(row)
 
     st.markdown("#### 재무/규모 참고")
-    c13, c14, c15, c16 = st.columns(4)
-    render_metric(c13, "유동자산", format_won_uk(row.get(COL_CURRENT_ASSETS)))
-    render_metric(c14, "부채총계", format_won_uk(row.get(COL_LIABILITIES)))
-    render_metric(c15, "현금성자산", format_won_uk(row.get(COL_CASH)))
-    render_metric(c16, "TTM EBIT", format_won_uk(row.get(COL_EBIT_TTM)))
+    c14, c15, c16, c17 = st.columns(4)
+    render_metric(c14, "유동자산", format_won_uk(row.get(COL_CURRENT_ASSETS)))
+    render_metric(c15, "부채총계", format_won_uk(row.get(COL_LIABILITIES)))
+    render_metric(c16, "현금성자산", format_won_uk(row.get(COL_CASH)))
+    render_metric(c17, "TTM EBIT", format_won_uk(row.get(COL_EBIT_TTM)))
 
-    c17, _ = st.columns([1, 3])
-    render_metric(c17, "EPS", format_number(row.get(COL_EPS)))
+    c18, _ = st.columns([1, 3])
+    render_metric(c18, "EPS", format_number(row.get(COL_EPS)))
 
     detail_columns = [
         COL_CODE,

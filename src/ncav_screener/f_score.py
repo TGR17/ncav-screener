@@ -101,6 +101,7 @@ def build_f_score_from_bulk(
     )
     output["average_assets_ttm"] = (output["assets_current"] + output["assets_previous"]) / 2
     output["average_equity_ttm"] = (output["equity_current"] + output["equity_previous"]) / 2
+    output["average_debt_ttm"] = (output["debt_current"] + output["debt_previous"]) / 2
     output["roa_quarter_current"] = _safe_divide(output["net_income_current"], output["assets_current"])
     output["roa_previous"] = _safe_divide(output["net_income_previous"], output["assets_previous"])
     output["roe_quarter_current"] = _safe_divide(output["net_income_current"], output["equity_current"])
@@ -205,6 +206,7 @@ def build_f_score_from_bulk(
         "net_income_ttm",
         "average_assets_ttm",
         "average_equity_ttm",
+        "average_debt_ttm",
         "cfo_current",
         "net_income_current",
         "debt_ratio_current",
@@ -224,7 +226,15 @@ def merge_f_score(results: pd.DataFrame, f_score: pd.DataFrame) -> pd.DataFrame:
     output["ticker"] = output["ticker"].astype(str).str.zfill(6)
     scores = f_score.copy()
     scores["ticker"] = scores["ticker"].astype(str).str.zfill(6)
-    return output.merge(scores, on="ticker", how="left")
+    output = output.merge(scores, on="ticker", how="left")
+    output["invested_capital"] = (
+        output["average_equity_ttm"]
+        + output["average_debt_ttm"].fillna(0)
+        - output["cash_and_equivalents"].fillna(0)
+    )
+    output["roic_current"] = _safe_divide(output["ebit_ttm"], output["invested_capital"])
+    output.loc[output["invested_capital"] <= 0, "roic_current"] = pd.NA
+    return output
 
 
 def _build_statement_values(path: Path, value_column: str | tuple[str, ...], account_codes: set[str]) -> pd.DataFrame:
