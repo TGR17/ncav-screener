@@ -21,6 +21,10 @@ CURRENT_ASSETS_CODE = "ifrs-full_CurrentAssets"
 LIABILITIES_CODE = "ifrs-full_Liabilities"
 CASH_CODE = "ifrs-full_CashAndCashEquivalents"
 OPERATING_INCOME_CODE = "dart_OperatingIncomeLoss"
+OTHER_FINANCIAL_LIABILITY_CODES = {
+    "ifrs-full_OtherCurrentFinancialLiabilities",
+    "ifrs-full_OtherNoncurrentFinancialLiabilities",
+}
 
 DEBT_CODES = {
     "ifrs-full_ShorttermBorrowings",
@@ -120,6 +124,7 @@ DEBT_NAME_EXCLUDE_KEYWORDS = (
 )
 
 INTEREST_BEARING_DEBT_COLUMN = "__interest_bearing_debt__"
+OTHER_FINANCIAL_LIABILITIES_COLUMN = "__other_financial_liabilities__"
 
 
 def is_interest_bearing_debt_code(account_code: object) -> bool:
@@ -231,6 +236,7 @@ def build_ncav_from_bulk_balance_sheet(path: Path) -> pd.DataFrame:
         CURRENT_ASSETS_CODE,
         LIABILITIES_CODE,
         CASH_CODE,
+        *OTHER_FINANCIAL_LIABILITY_CODES,
     }
     debt_mask = frame.apply(
         lambda row: is_interest_bearing_debt_account(row[ACCOUNT_CODE_COLUMN], row[ACCOUNT_NAME_COLUMN]),
@@ -261,8 +267,17 @@ def build_ncav_from_bulk_balance_sheet(path: Path) -> pd.DataFrame:
             axis=1,
         )
     ].groupby("ticker")["amount"].sum(min_count=1)
+    other_financial_liabilities = selected.loc[
+        selected[ACCOUNT_CODE_COLUMN].isin(OTHER_FINANCIAL_LIABILITY_CODES)
+    ].groupby("ticker")["amount"].sum(min_count=1)
 
-    output = base.set_index("ticker").join(pivot, how="left").join(debt_by_ticker.rename(INTEREST_BEARING_DEBT_COLUMN), how="left").reset_index()
+    output = (
+        base.set_index("ticker")
+        .join(pivot, how="left")
+        .join(debt_by_ticker.rename(INTEREST_BEARING_DEBT_COLUMN), how="left")
+        .join(other_financial_liabilities.rename(OTHER_FINANCIAL_LIABILITIES_COLUMN), how="left")
+        .reset_index()
+    )
     output = output.rename(
         columns={
             COMPANY_NAME_COLUMN: "name",
@@ -276,6 +291,7 @@ def build_ncav_from_bulk_balance_sheet(path: Path) -> pd.DataFrame:
     )
 
     output["interest_bearing_debt"] = output[INTEREST_BEARING_DEBT_COLUMN].fillna(0)
+    output["other_financial_liabilities"] = output[OTHER_FINANCIAL_LIABILITIES_COLUMN].fillna(0)
 
     output["ncav"] = output["current_assets"] - output["total_liabilities"]
     keep = [
@@ -289,6 +305,7 @@ def build_ncav_from_bulk_balance_sheet(path: Path) -> pd.DataFrame:
         "ncav",
         "cash_and_equivalents",
         "interest_bearing_debt",
+        "other_financial_liabilities",
     ]
     return output[keep]
 
@@ -410,7 +427,10 @@ def add_ev_ebit(results: pd.DataFrame, ttm_ebit: pd.DataFrame) -> pd.DataFrame:
         - output["cash_and_equivalents"].fillna(0)
     )
     output["ev_ebit"] = output["ev"] / output["ebit_ttm"]
+    output["conservative_ev"] = output["ev"] + output["other_financial_liabilities"].fillna(0)
+    output["conservative_ev_ebit"] = output["conservative_ev"] / output["ebit_ttm"]
     output.loc[output["ebit_ttm"] <= 0, "ev_ebit"] = pd.NA
+    output.loc[output["ebit_ttm"] <= 0, "conservative_ev_ebit"] = pd.NA
     return output
 
 

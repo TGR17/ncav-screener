@@ -34,9 +34,12 @@ COL_NCAV_PER_SHARE = "주당 NCAV"
 COL_NCAV_RATIO = "NCAV 배율"
 COL_CASH = "현금및현금성자산"
 COL_DEBT = "이자발생부채"
+COL_OTHER_FINANCIAL_LIABILITIES = "기타금융부채"
 COL_EBIT_TTM = "TTM EBIT"
 COL_EV = "EV"
 COL_EV_EBIT = "EV/EBIT"
+COL_CONSERVATIVE_EV = "보수 EV"
+COL_CONSERVATIVE_EV_EBIT = "보수 EV/EBIT"
 COL_PER = "PER"
 COL_PBR = "PBR"
 COL_EPS = "EPS"
@@ -66,8 +69,10 @@ MONEY_COLUMNS = [
     COL_NCAV,
     COL_CASH,
     COL_DEBT,
+    COL_OTHER_FINANCIAL_LIABILITIES,
     COL_EBIT_TTM,
     COL_EV,
+    COL_CONSERVATIVE_EV,
     COL_TRADING_VALUE,
 ]
 
@@ -438,10 +443,13 @@ METRIC_HELP = {
     "NCAV": "유동자산에서 부채총계를 뺀 값입니다. 청산가치에 가까운 보수적인 순유동자산 지표입니다.",
     "NCAV 배율": "시가총액을 NCAV로 나눈 값입니다. 1보다 낮으면 시가총액이 순유동자산보다 낮다는 뜻입니다.",
     "EV/EBIT": "기업가치(EV)를 영업이익(TTM EBIT)으로 나눈 값입니다. 낮을수록 영업이익 대비 기업가치가 낮게 평가된 상태로 볼 수 있습니다.",
+    "보수 EV": "기본 EV에 기타금융부채를 더한 값입니다. 기타금융부채를 모두 부채로 보는 더 보수적인 기업가치입니다.",
+    "보수 EV/EBIT": "보수 EV를 최근 12개월 영업이익으로 나눈 값입니다. 기타금융부채가 큰 기업의 위험을 더 넓게 보기 위한 참고값입니다.",
     "유동자산": "1년 안에 현금화되거나 사용될 가능성이 높은 자산입니다.",
     "부채총계": "회사가 갚아야 할 모든 부채의 합계입니다.",
     "현금성자산": "현금 및 단기간에 현금처럼 쓸 수 있는 자산입니다.",
     "이자발생부채": "차입금, 사채, 전환사채, 리스부채처럼 이자 비용이 발생할 수 있는 부채입니다. EV 계산에 더하는 순부채 항목입니다.",
+    "기타금융부채": "요약 재무상태표에서 세부 성격이 확정되지 않은 기타 금융부채입니다. 보수 EV 계산에서는 이 금액을 추가로 부채로 봅니다.",
     "TTM EBIT": "최근 12개월 기준 영업이익 추정치입니다. 여기서는 2025년 연간 영업이익 - 2025년 1분기 + 2026년 1분기로 계산했습니다.",
     "PER": "주가를 주당순이익(EPS)으로 나눈 값입니다. 낮을수록 이익 대비 주가가 낮다는 뜻입니다.",
     "PBR": "주가를 주당순자산(BPS)으로 나눈 값입니다. 낮을수록 장부가치 대비 주가가 낮다는 뜻입니다.",
@@ -968,7 +976,7 @@ def render_detail(df: pd.DataFrame) -> None:
     c5, c6, c7, c8 = st.columns(4)
     render_metric(c5, "시가총액", format_won_uk(row.get(COL_MARKET_CAP)))
     render_metric(c6, "NCAV", format_won_uk(row.get(COL_NCAV)))
-    render_metric(c7, "BPS", format_number(row.get(COL_BPS)))
+    render_metric(c7, "보수 EV/EBIT", format_ratio(row.get(COL_CONSERVATIVE_EV_EBIT)))
     render_metric(c8, "배당수익률", format_ratio(row.get(COL_DIVIDEND_YIELD)))
 
     st.markdown("#### 퀄리티 팩터")
@@ -987,9 +995,11 @@ def render_detail(df: pd.DataFrame) -> None:
     render_metric(c16, "현금성자산", format_won_uk(row.get(COL_CASH)))
     render_metric(c17, "TTM EBIT", format_won_uk(row.get(COL_EBIT_TTM)))
 
-    c18, c19, _ = st.columns([1, 1, 2])
+    c18, c19, c20, c21 = st.columns(4)
     render_metric(c18, "이자발생부채", format_won_uk(row.get(COL_DEBT)))
-    render_metric(c19, "EPS", format_number(row.get(COL_EPS)))
+    render_metric(c19, "기타금융부채", format_won_uk(row.get(COL_OTHER_FINANCIAL_LIABILITIES)))
+    render_metric(c20, "보수 EV", format_won_uk(row.get(COL_CONSERVATIVE_EV)))
+    render_metric(c21, "EPS", format_number(row.get(COL_EPS)))
 
     detail_columns = [
         COL_CODE,
@@ -1002,7 +1012,10 @@ def render_detail(df: pd.DataFrame) -> None:
         COL_TRADING_VALUE,
         COL_SHARES,
         COL_DEBT,
+        COL_OTHER_FINANCIAL_LIABILITIES,
         COL_EV,
+        COL_CONSERVATIVE_EV,
+        COL_CONSERVATIVE_EV_EBIT,
         COL_PER,
         COL_PBR,
         COL_F_SCORE,
