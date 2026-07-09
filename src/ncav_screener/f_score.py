@@ -14,6 +14,7 @@ from .dart_bulk import (
     DEBT_CODES,
     OPERATING_INCOME_CODE,
     Q1_CUMULATIVE_COLUMN,
+    is_interest_bearing_debt_code,
     STOCK_CODE_COLUMN,
     parse_amount,
     read_dart_bulk_statement,
@@ -50,6 +51,7 @@ def build_f_score_from_bulk(
             CURRENT_LIABILITIES_CODE,
             *DEBT_CODES,
         },
+        include_interest_bearing_debt_codes=True,
     )
     previous_bs = _build_statement_values(
         previous_balance_sheet_path,
@@ -61,6 +63,7 @@ def build_f_score_from_bulk(
             CURRENT_LIABILITIES_CODE,
             *DEBT_CODES,
         },
+        include_interest_bearing_debt_codes=True,
     )
     current_income = _build_statement_values_with_fallback(
         current_income_path,
@@ -237,7 +240,12 @@ def merge_f_score(results: pd.DataFrame, f_score: pd.DataFrame) -> pd.DataFrame:
     return output
 
 
-def _build_statement_values(path: Path, value_column: str | tuple[str, ...], account_codes: set[str]) -> pd.DataFrame:
+def _build_statement_values(
+    path: Path,
+    value_column: str | tuple[str, ...],
+    account_codes: set[str],
+    include_interest_bearing_debt_codes: bool = False,
+) -> pd.DataFrame:
     raw = read_dart_bulk_statement(path)
     value_column_name = _resolve_value_column(raw, value_column)
     required = {STOCK_CODE_COLUMN, COMPANY_NAME_COLUMN, ACCOUNT_CODE_COLUMN, value_column_name}
@@ -245,7 +253,10 @@ def _build_statement_values(path: Path, value_column: str | tuple[str, ...], acc
     if missing:
         raise ValueError(f"DART bulk file is missing columns: {sorted(missing)}")
 
-    frame = raw.loc[raw[ACCOUNT_CODE_COLUMN].isin(account_codes)].copy()
+    mask = raw[ACCOUNT_CODE_COLUMN].isin(account_codes)
+    if include_interest_bearing_debt_codes:
+        mask = mask | raw[ACCOUNT_CODE_COLUMN].map(is_interest_bearing_debt_code)
+    frame = raw.loc[mask].copy()
     frame["ticker"] = frame[STOCK_CODE_COLUMN].str.replace(r"[\[\]]", "", regex=True).str.zfill(6)
     frame["amount"] = frame[value_column_name].map(parse_amount)
 
@@ -293,7 +304,7 @@ def _combine_period(
     output = balance_sheet.merge(income.drop(columns=[COMPANY_NAME_COLUMN], errors="ignore"), on="ticker", how="outer")
     output = output.merge(cash_flow.drop(columns=[COMPANY_NAME_COLUMN], errors="ignore"), on="ticker", how="outer")
 
-    debt_columns = [column for column in DEBT_CODES if column in output.columns]
+    debt_columns = [column for column in output.columns if is_interest_bearing_debt_code(column)]
     if debt_columns:
         output["debt"] = output[debt_columns].fillna(0).sum(axis=1)
     else:

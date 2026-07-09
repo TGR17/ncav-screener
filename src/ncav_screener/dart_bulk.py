@@ -24,13 +24,92 @@ OPERATING_INCOME_CODE = "dart_OperatingIncomeLoss"
 
 DEBT_CODES = {
     "ifrs-full_ShorttermBorrowings",
+    "ifrs-full_Borrowings",
+    "ifrs-full_CurrentBorrowingsAndCurrentPortionOfNoncurrentBorrowings",
     "ifrs-full_CurrentPortionOfLongtermBorrowings",
     "ifrs-full_CurrentPortionOfBondsIssued",
+    "ifrs-full_CurrentBondsIssuedAndCurrentPortionOfNoncurrentBondsIssued",
+    "ifrs-full_CurrentNotesAndDebenturesIssuedAndCurrentPortionOfNoncurrentNotesAndDebenturesIssued",
     "ifrs-full_CurrentLeaseLiabilities",
     "ifrs-full_LongtermBorrowings",
     "ifrs-full_BondsIssued",
+    "ifrs-full_NoncurrentDebtInstrumentsIssued",
     "ifrs-full_NoncurrentLeaseLiabilities",
+    "ifrs-full_NoncurrentPortionOfNoncurrentBondsIssued",
+    "ifrs-full_NoncurrentPortionOfNoncurrentNotesAndDebenturesIssued",
+    "dart_BondWithWarrant",
+    "dart_BondWithWarrantNet",
+    "dart_ConvertibleBonds",
+    "dart_ConvertibleBondsNet",
+    "dart_ConvertibleRedeemablePreferredStockLiabilities",
+    "dart_ConvertibleRedeemablePreferredStockLiabilitiesNet",
+    "dart_CurentPortionOfFinanceLeaseLiabilities",
+    "dart_CurrentPortionOfBondWithWarrant",
+    "dart_CurrentPortionOfBonds",
+    "dart_CurrentPortionOfConvertibleBonds",
+    "dart_CurrentPortionOfConvertibleRedeemablePreferredStockLiabilities",
+    "dart_CurrentPortionOfExchangeableBond",
+    "dart_ExchangeableBonds",
+    "dart_ExchangeableBondsNet",
+    "dart_NonCurrentFinanceLeaseLiabilities",
 }
+
+DEBT_CODE_KEYWORDS = (
+    "borrowings",
+    "borrowing",
+    "loansreceived",
+    "loanspayable",
+    "longtermdebt",
+    "debentures",
+    "bondsissued",
+    "bondissued",
+    "bondspayable",
+    "corporatebond",
+    "convertiblebond",
+    "convertiblebonds",
+    "bondwithwarrant",
+    "exchangeablebond",
+    "leaseabilities",
+    "leaseliabilities",
+    "leaseliability",
+    "financeleaseliabilities",
+    "redeemableconvertiblepreferredstockliabilities",
+    "convertiblepreferredstockliabilities",
+)
+
+DEBT_CODE_EXCLUDE_KEYWORDS = (
+    "assets",
+    "asset",
+    "receivable",
+    "receivables",
+    "equity",
+    "capitalsurplus",
+    "rightsadjustment",
+    "discount",
+    "redemptionpremium",
+    "warranty",
+    "provision",
+    "allowance",
+    "securitiesheld",
+    "nominalvalue",
+    "held",
+    "trust",
+    "abstract",
+)
+
+
+def is_interest_bearing_debt_code(account_code: object) -> bool:
+    if account_code is None or pd.isna(account_code):
+        return False
+
+    code = str(account_code)
+    if code in DEBT_CODES:
+        return True
+
+    normalized = code.replace("_", "").replace("-", "").lower()
+    if any(keyword in normalized for keyword in DEBT_CODE_EXCLUDE_KEYWORDS):
+        return False
+    return any(keyword in normalized for keyword in DEBT_CODE_KEYWORDS)
 
 
 def read_dart_bulk_statement(path: Path) -> pd.DataFrame:
@@ -116,9 +195,11 @@ def build_ncav_from_bulk_balance_sheet(path: Path) -> pd.DataFrame:
         CURRENT_ASSETS_CODE,
         LIABILITIES_CODE,
         CASH_CODE,
-        *DEBT_CODES,
     }
-    selected = frame.loc[frame[ACCOUNT_CODE_COLUMN].isin(key_codes)].copy()
+    selected = frame.loc[
+        frame[ACCOUNT_CODE_COLUMN].isin(key_codes)
+        | frame[ACCOUNT_CODE_COLUMN].map(is_interest_bearing_debt_code)
+    ].copy()
     base = selected[
         [
             STOCK_CODE_COLUMN,
@@ -150,7 +231,7 @@ def build_ncav_from_bulk_balance_sheet(path: Path) -> pd.DataFrame:
         }
     )
 
-    debt_columns = [column for column in DEBT_CODES if column in output.columns]
+    debt_columns = [column for column in output.columns if is_interest_bearing_debt_code(column)]
     if debt_columns:
         output["interest_bearing_debt"] = output[debt_columns].fillna(0).sum(axis=1)
     else:
