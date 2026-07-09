@@ -434,8 +434,8 @@ def add_ev_ebit(results: pd.DataFrame, ttm_ebit: pd.DataFrame) -> pd.DataFrame:
     output["ev_ebit"] = output["ev"] / output["ebit_ttm"]
     output["conservative_ev"] = output["ev"] + output["other_financial_liabilities"].fillna(0)
     output["conservative_ev_ebit"] = output["conservative_ev"] / output["ebit_ttm"]
-    output.loc[output["ebit_ttm"] <= 0, "ev_ebit"] = pd.NA
-    output.loc[output["ebit_ttm"] <= 0, "conservative_ev_ebit"] = pd.NA
+    output.loc[output["ebit_ttm"] == 0, "ev_ebit"] = pd.NA
+    output.loc[output["ebit_ttm"] == 0, "conservative_ev_ebit"] = pd.NA
     return output
 
 

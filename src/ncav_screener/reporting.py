@@ -146,8 +146,8 @@ def add_data_notes(frame: pd.DataFrame) -> pd.DataFrame:
             has_missing = True
             row_notes.append("NCAV 배율 산출 데이터 누락")
 
-        if pd.notna(ebit_ttm) and ebit_ttm <= 0:
-            row_notes.append("TTM EBIT가 0 이하라 EV/EBIT 제외")
+        if pd.notna(ebit_ttm) and ebit_ttm == 0:
+            row_notes.append("TTM EBIT가 0이라 EV/EBIT 제외")
         elif pd.isna(row.get("ev_ebit")) and pd.notna(ebit_ttm):
             has_missing = True
             row_notes.append("EV/EBIT 산출 데이터 누락")
