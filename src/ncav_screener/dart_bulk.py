@@ -97,6 +97,30 @@ DEBT_CODE_EXCLUDE_KEYWORDS = (
     "abstract",
 )
 
+DEBT_NAME_KEYWORDS = (
+    "차입금",
+    "사채",
+    "전환사채",
+    "교환사채",
+    "신주인수권부사채",
+    "리스부채",
+)
+
+DEBT_NAME_EXCLUDE_KEYWORDS = (
+    "채권",
+    "자산",
+    "자본",
+    "충당",
+    "법인세",
+    "매입채무",
+    "미지급",
+    "평가",
+    "할인",
+    "상환할증금",
+)
+
+INTEREST_BEARING_DEBT_COLUMN = "__interest_bearing_debt__"
+
 
 def is_interest_bearing_debt_code(account_code: object) -> bool:
     if account_code is None or pd.isna(account_code):
@@ -110,6 +134,18 @@ def is_interest_bearing_debt_code(account_code: object) -> bool:
     if any(keyword in normalized for keyword in DEBT_CODE_EXCLUDE_KEYWORDS):
         return False
     return any(keyword in normalized for keyword in DEBT_CODE_KEYWORDS)
+
+
+def is_interest_bearing_debt_account(account_code: object, account_name: object = None) -> bool:
+    if is_interest_bearing_debt_code(account_code):
+        return True
+    if account_name is None or pd.isna(account_name):
+        return False
+
+    name = str(account_name).replace(" ", "")
+    if any(keyword in name for keyword in DEBT_NAME_EXCLUDE_KEYWORDS):
+        return False
+    return any(keyword in name for keyword in DEBT_NAME_KEYWORDS)
 
 
 def read_dart_bulk_statement(path: Path) -> pd.DataFrame:
@@ -196,10 +232,11 @@ def build_ncav_from_bulk_balance_sheet(path: Path) -> pd.DataFrame:
         LIABILITIES_CODE,
         CASH_CODE,
     }
-    selected = frame.loc[
-        frame[ACCOUNT_CODE_COLUMN].isin(key_codes)
-        | frame[ACCOUNT_CODE_COLUMN].map(is_interest_bearing_debt_code)
-    ].copy()
+    debt_mask = frame.apply(
+        lambda row: is_interest_bearing_debt_account(row[ACCOUNT_CODE_COLUMN], row[ACCOUNT_NAME_COLUMN]),
+        axis=1,
+    )
+    selected = frame.loc[frame[ACCOUNT_CODE_COLUMN].isin(key_codes) | debt_mask].copy()
     base = selected[
         [
             STOCK_CODE_COLUMN,
@@ -218,7 +255,14 @@ def build_ncav_from_bulk_balance_sheet(path: Path) -> pd.DataFrame:
         aggfunc="first",
     )
 
-    output = base.set_index("ticker").join(pivot, how="left").reset_index()
+    debt_by_ticker = selected.loc[
+        selected.apply(
+            lambda row: is_interest_bearing_debt_account(row[ACCOUNT_CODE_COLUMN], row[ACCOUNT_NAME_COLUMN]),
+            axis=1,
+        )
+    ].groupby("ticker")["amount"].sum(min_count=1)
+
+    output = base.set_index("ticker").join(pivot, how="left").join(debt_by_ticker.rename(INTEREST_BEARING_DEBT_COLUMN), how="left").reset_index()
     output = output.rename(
         columns={
             COMPANY_NAME_COLUMN: "name",
@@ -231,11 +275,7 @@ def build_ncav_from_bulk_balance_sheet(path: Path) -> pd.DataFrame:
         }
     )
 
-    debt_columns = [column for column in output.columns if is_interest_bearing_debt_code(column)]
-    if debt_columns:
-        output["interest_bearing_debt"] = output[debt_columns].fillna(0).sum(axis=1)
-    else:
-        output["interest_bearing_debt"] = 0.0
+    output["interest_bearing_debt"] = output[INTEREST_BEARING_DEBT_COLUMN].fillna(0)
 
     output["ncav"] = output["current_assets"] - output["total_liabilities"]
     keep = [

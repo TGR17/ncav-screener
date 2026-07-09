@@ -7,13 +7,16 @@ import pandas as pd
 
 from .dart_bulk import (
     ACCOUNT_CODE_COLUMN,
+    ACCOUNT_NAME_COLUMN,
     ANNUAL_CURRENT_PERIOD_COLUMN,
     COMPANY_NAME_COLUMN,
     CURRENT_ASSETS_CODE,
     CURRENT_PERIOD_COLUMN,
     DEBT_CODES,
+    INTEREST_BEARING_DEBT_COLUMN,
     OPERATING_INCOME_CODE,
     Q1_CUMULATIVE_COLUMN,
+    is_interest_bearing_debt_account,
     is_interest_bearing_debt_code,
     STOCK_CODE_COLUMN,
     parse_amount,
@@ -253,9 +256,13 @@ def _build_statement_values(
     if missing:
         raise ValueError(f"DART bulk file is missing columns: {sorted(missing)}")
 
+    debt_mask = raw.apply(
+        lambda row: is_interest_bearing_debt_account(row[ACCOUNT_CODE_COLUMN], row[ACCOUNT_NAME_COLUMN]),
+        axis=1,
+    )
     mask = raw[ACCOUNT_CODE_COLUMN].isin(account_codes)
     if include_interest_bearing_debt_codes:
-        mask = mask | raw[ACCOUNT_CODE_COLUMN].map(is_interest_bearing_debt_code)
+        mask = mask | debt_mask
     frame = raw.loc[mask].copy()
     frame["ticker"] = frame[STOCK_CODE_COLUMN].str.replace(r"[\[\]]", "", regex=True).str.zfill(6)
     frame["amount"] = frame[value_column_name].map(parse_amount)
@@ -267,7 +274,16 @@ def _build_statement_values(
         values="amount",
         aggfunc="first",
     )
-    return base.set_index("ticker").join(pivot, how="left").reset_index()
+    output = base.set_index("ticker").join(pivot, how="left")
+    if include_interest_bearing_debt_codes:
+        debt_by_ticker = frame.loc[
+            frame.apply(
+                lambda row: is_interest_bearing_debt_account(row[ACCOUNT_CODE_COLUMN], row[ACCOUNT_NAME_COLUMN]),
+                axis=1,
+            )
+        ].groupby("ticker")["amount"].sum(min_count=1)
+        output = output.join(debt_by_ticker.rename(INTEREST_BEARING_DEBT_COLUMN), how="left")
+    return output.reset_index()
 
 
 def _build_statement_values_with_fallback(
@@ -304,11 +320,14 @@ def _combine_period(
     output = balance_sheet.merge(income.drop(columns=[COMPANY_NAME_COLUMN], errors="ignore"), on="ticker", how="outer")
     output = output.merge(cash_flow.drop(columns=[COMPANY_NAME_COLUMN], errors="ignore"), on="ticker", how="outer")
 
-    debt_columns = [column for column in output.columns if is_interest_bearing_debt_code(column)]
-    if debt_columns:
-        output["debt"] = output[debt_columns].fillna(0).sum(axis=1)
+    if INTEREST_BEARING_DEBT_COLUMN in output.columns:
+        output["debt"] = output[INTEREST_BEARING_DEBT_COLUMN]
     else:
-        output["debt"] = pd.NA
+        debt_columns = [column for column in output.columns if is_interest_bearing_debt_code(column)]
+        if debt_columns:
+            output["debt"] = output[debt_columns].fillna(0).sum(axis=1)
+        else:
+            output["debt"] = pd.NA
 
     output = output.rename(
         columns={
