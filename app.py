@@ -710,13 +710,13 @@ def sidebar_filters(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, object]]:
     if ev_ebit_enabled:
         ev_min, ev_max = st.sidebar.slider(
             "EV/EBIT",
-            min_value=0.0,
+            min_value=-20.0,
             max_value=20.0,
-            value=(0.0, 5.0),
+            value=(-20.0, 5.0),
             step=0.5,
             help=(
                 "EV/EBIT는 기업가치(EV)를 최근 12개월 영업이익으로 나눈 값입니다. "
-                "낮을수록 영업이익 대비 기업가치가 낮게 평가된 상태로 볼 수 있습니다."
+                "음수는 현금성자산이 시가총액과 이자발생부채보다 큰 순현금 기업에서 나올 수 있습니다."
             ),
         )
         filter_state["EV/EBIT"] = f"{ev_min:.1f} ~ {ev_max:.1f}"
