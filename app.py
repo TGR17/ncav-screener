@@ -441,6 +441,7 @@ METRIC_HELP = {
     "유동자산": "1년 안에 현금화되거나 사용될 가능성이 높은 자산입니다.",
     "부채총계": "회사가 갚아야 할 모든 부채의 합계입니다.",
     "현금성자산": "현금 및 단기간에 현금처럼 쓸 수 있는 자산입니다.",
+    "이자발생부채": "차입금, 사채, 전환사채, 리스부채처럼 이자 비용이 발생할 수 있는 부채입니다. EV 계산에 더하는 순부채 항목입니다.",
     "TTM EBIT": "최근 12개월 기준 영업이익 추정치입니다. 여기서는 2025년 연간 영업이익 - 2025년 1분기 + 2026년 1분기로 계산했습니다.",
     "PER": "주가를 주당순이익(EPS)으로 나눈 값입니다. 낮을수록 이익 대비 주가가 낮다는 뜻입니다.",
     "PBR": "주가를 주당순자산(BPS)으로 나눈 값입니다. 낮을수록 장부가치 대비 주가가 낮다는 뜻입니다.",
@@ -980,14 +981,14 @@ def render_detail(df: pd.DataFrame) -> None:
     render_f_score_breakdown(row)
 
     st.markdown("#### 재무/규모 참고")
-    c14, c15, c16, c17, c18 = st.columns(5)
+    c14, c15, c16, c17 = st.columns(4)
     render_metric(c14, "유동자산", format_won_uk(row.get(COL_CURRENT_ASSETS)))
     render_metric(c15, "부채총계", format_won_uk(row.get(COL_LIABILITIES)))
     render_metric(c16, "현금성자산", format_won_uk(row.get(COL_CASH)))
-    render_metric(c17, "이자발생부채", format_won_uk(row.get(COL_DEBT)))
-    render_metric(c18, "TTM EBIT", format_won_uk(row.get(COL_EBIT_TTM)))
+    render_metric(c17, "TTM EBIT", format_won_uk(row.get(COL_EBIT_TTM)))
 
-    c19, _ = st.columns([1, 3])
+    c18, c19, _ = st.columns([1, 1, 2])
+    render_metric(c18, "이자발생부채", format_won_uk(row.get(COL_DEBT)))
     render_metric(c19, "EPS", format_number(row.get(COL_EPS)))
 
     detail_columns = [
