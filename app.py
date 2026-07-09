@@ -968,15 +968,15 @@ def render_detail(df: pd.DataFrame) -> None:
 
     st.markdown("#### 밸류 팩터")
     c1, c2, c3, c4 = st.columns(4)
-    render_metric(c1, "NCAV 배율", format_ratio(row.get(COL_NCAV_RATIO)))
-    render_metric(c2, "EV/EBIT", format_ratio(row.get(COL_EV_EBIT)))
-    render_metric(c3, "PER", format_ratio(row.get(COL_PER)))
-    render_metric(c4, "PBR", format_ratio(row.get(COL_PBR)))
+    render_metric(c1, "EV/EBIT", format_ratio(row.get(COL_EV_EBIT)))
+    render_metric(c2, "보수 EV/EBIT", format_ratio(row.get(COL_CONSERVATIVE_EV_EBIT)))
+    render_metric(c3, "NCAV", format_won_uk(row.get(COL_NCAV)))
+    render_metric(c4, "NCAV 배율", format_ratio(row.get(COL_NCAV_RATIO)))
 
     c5, c6, c7, c8 = st.columns(4)
     render_metric(c5, "시가총액", format_won_uk(row.get(COL_MARKET_CAP)))
-    render_metric(c6, "NCAV", format_won_uk(row.get(COL_NCAV)))
-    render_metric(c7, "보수 EV/EBIT", format_ratio(row.get(COL_CONSERVATIVE_EV_EBIT)))
+    render_metric(c6, "PER", format_ratio(row.get(COL_PER)))
+    render_metric(c7, "PBR", format_ratio(row.get(COL_PBR)))
     render_metric(c8, "배당수익률", format_ratio(row.get(COL_DIVIDEND_YIELD)))
 
     st.markdown("#### 퀄리티 팩터")
@@ -991,15 +991,15 @@ def render_detail(df: pd.DataFrame) -> None:
     st.markdown("#### 재무/규모 참고")
     c14, c15, c16, c17 = st.columns(4)
     render_metric(c14, "유동자산", format_won_uk(row.get(COL_CURRENT_ASSETS)))
-    render_metric(c15, "부채총계", format_won_uk(row.get(COL_LIABILITIES)))
-    render_metric(c16, "현금성자산", format_won_uk(row.get(COL_CASH)))
-    render_metric(c17, "TTM EBIT", format_won_uk(row.get(COL_EBIT_TTM)))
+    render_metric(c15, "현금성자산", format_won_uk(row.get(COL_CASH)))
+    render_metric(c16, "TTM EBIT", format_won_uk(row.get(COL_EBIT_TTM)))
+    render_metric(c17, "EPS", format_number(row.get(COL_EPS)))
 
     c18, c19, c20, c21 = st.columns(4)
-    render_metric(c18, "이자발생부채", format_won_uk(row.get(COL_DEBT)))
-    render_metric(c19, "기타금융부채", format_won_uk(row.get(COL_OTHER_FINANCIAL_LIABILITIES)))
-    render_metric(c20, "보수 EV", format_won_uk(row.get(COL_CONSERVATIVE_EV)))
-    render_metric(c21, "EPS", format_number(row.get(COL_EPS)))
+    render_metric(c18, "부채총계", format_won_uk(row.get(COL_LIABILITIES)))
+    render_metric(c19, "이자발생부채", format_won_uk(row.get(COL_DEBT)))
+    render_metric(c20, "기타금융부채", format_won_uk(row.get(COL_OTHER_FINANCIAL_LIABILITIES)))
+    render_metric(c21, "보수 EV", format_won_uk(row.get(COL_CONSERVATIVE_EV)))
 
     detail_columns = [
         COL_CODE,
