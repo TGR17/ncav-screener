@@ -980,14 +980,15 @@ def render_detail(df: pd.DataFrame) -> None:
     render_f_score_breakdown(row)
 
     st.markdown("#### 재무/규모 참고")
-    c14, c15, c16, c17 = st.columns(4)
+    c14, c15, c16, c17, c18 = st.columns(5)
     render_metric(c14, "유동자산", format_won_uk(row.get(COL_CURRENT_ASSETS)))
     render_metric(c15, "부채총계", format_won_uk(row.get(COL_LIABILITIES)))
     render_metric(c16, "현금성자산", format_won_uk(row.get(COL_CASH)))
-    render_metric(c17, "TTM EBIT", format_won_uk(row.get(COL_EBIT_TTM)))
+    render_metric(c17, "이자발생부채", format_won_uk(row.get(COL_DEBT)))
+    render_metric(c18, "TTM EBIT", format_won_uk(row.get(COL_EBIT_TTM)))
 
-    c18, _ = st.columns([1, 3])
-    render_metric(c18, "EPS", format_number(row.get(COL_EPS)))
+    c19, _ = st.columns([1, 3])
+    render_metric(c19, "EPS", format_number(row.get(COL_EPS)))
 
     detail_columns = [
         COL_CODE,
