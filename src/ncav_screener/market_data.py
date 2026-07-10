@@ -16,7 +16,7 @@ KRX_TRADING_VALUE_COLUMN = "\uac70\ub798\ub300\uae08"
 KRX_MARKET_CAP_COLUMN = "\uc2dc\uac00\ucd1d\uc561"
 KRX_LISTED_SHARES_COLUMN = "\uc0c1\uc7a5\uc8fc\uc2dd\uc218"
 
-PREFERRED_SHARE_PATTERN = r"(?:\d*\uc6b0|\uc6b0\(\uc804\ud658\)|\uc804\ud658\)|\uc6b0B|\uc6b0\uc120\uc8fc)"
+PREFERRED_SHARE_PATTERN = r"(?:\d*\uc6b0B?$|\uc6b0\(\uc804\ud658\)$|\uc804\ud658\)$|\uc6b0\uc120\uc8fc$)"
 SPAC_PATTERN = r"(?:\uc2a4\ud329|SPAC)"
 FINANCIAL_PATTERN = r"(?:\uae08\uc735\uc9c0\uc8fc|\uae08\uc735|\uc740\ud589|\uc99d\uad8c|\uc190\ud574\ubcf4\ud5d8|\uc0dd\uba85\ubcf4\ud5d8|\ubcf4\ud5d8)"
 HOLDING_PATTERN = r"(?:\ud640\ub529\uc2a4|\uc9c0\uc8fc|Holdings)"
