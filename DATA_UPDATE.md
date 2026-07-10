@@ -27,6 +27,15 @@ data/app/screener_results_us.csv
 | KRX 투자지표 CSV | KRX 정보데이터시스템 | `data/input/krx_fundamental.csv` | PER, PBR, 배당수익률 등 보조 지표 |
 | 변환된 한국 시세 | 프로그램이 생성 | `data/input/market_data.csv` | 한국 스크리너 계산용 시세 |
 
+DART 재무제표 통화가 `KRW`가 아닌 종목은 원화로 환산한 뒤 KRX 시가총액과 비교합니다. 현재 기본 환율은 코드의 `DART_CURRENCY_TO_KRW`에 들어 있습니다.
+
+```text
+USD = 1,370 KRW
+CNY = 190 KRW
+```
+
+두산밥캣처럼 DART 재무제표 통화가 USD인 종목은 이 환산을 거치지 않으면 EBIT과 자산이 원화 대비 과소 표시됩니다. 환율 기준을 바꾸려면 `src/ncav_screener/dart_bulk.py`의 `DART_CURRENCY_TO_KRW` 값을 수정한 뒤 한국 데이터를 다시 생성하면 됩니다.
+
 한국 데이터만 갱신할 때는 프로젝트 폴더에서 아래 파일을 실행합니다.
 
 ```text
