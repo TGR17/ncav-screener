@@ -47,11 +47,16 @@ def test_filter_us_screening_universe_excludes_financial_and_special_securities(
         [
             {"ticker": "AAPL", "name": "Apple Inc. Common Stock", "sector": "Technology"},
             {"ticker": "BANK", "name": "Bank Co Common Stock", "sector": "Finance"},
+            {"ticker": "UTIL", "name": "Utility Co Common Stock", "sector": "Utilities"},
+            {"ticker": "HOLD", "name": "Example Holdings Inc. Common Stock", "sector": "Technology"},
+            {"ticker": "BANC", "name": "Example Bancorp Common Stock", "sector": "Industrials"},
+            {"ticker": "FIN", "name": "Example Financial Holdings Common Stock", "sector": "Consumer Discretionary"},
             {"ticker": "SPACU", "name": "Example Acquisition Corp Unit", "sector": "Industrials"},
             {"ticker": "ADRX", "name": "Example American Depositary Shares", "sector": "Health Care"},
+            {"ticker": "BRGT", "name": "Bright Software Inc. Common Stock", "sector": "Technology"},
         ]
     )
 
     filtered = filter_us_screening_universe(frame)
 
-    assert filtered["ticker"].tolist() == ["AAPL"]
+    assert filtered["ticker"].tolist() == ["AAPL", "BRGT"]
