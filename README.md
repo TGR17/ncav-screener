@@ -2,14 +2,14 @@
 
 [배포 앱 바로가기](https://ncav-screener-kjsj5fvtgmac9t8swzbfx.streamlit.app)
 
-한국 주식시장에서 NCAV, EV/EBIT, F-score, ROE, ROA 등 가치/퀄리티 지표를 함께 확인하는 Streamlit 앱입니다.
+한국과 미국 주식시장에서 NCAV, EV/EBIT, F-score 등 가치/퀄리티 지표를 함께 확인하는 Streamlit 앱입니다.
 
-이 앱은 실시간 조회 앱이 아니라, DART/KRX 원본 파일로 미리 만든 CSV를 읽어서 필터링하는 방식입니다.
+이 앱은 실시간 조회 앱이 아니라, DART/KRX/SEC/Nasdaq 원본 파일로 미리 만든 CSV를 읽어서 필터링하는 방식입니다.
 
 ## 주요 기능
 
 - NCAV 배율 기준 검색
-- EV/EBIT, PER, PBR 필터
+- EV/EBIT, 보수 EV/EBIT 필터
 - F-score 필터와 세부 항목 확인
 - ROE, ROA, 영업이익률 필터
 - 업종별 후보 수 확인
@@ -26,6 +26,7 @@ streamlit run app.py
 
 ```text
 data/app/screener_results_kr.csv
+data/app/screener_results_us.csv
 ```
 
 ## 데이터 업데이트
@@ -48,6 +49,7 @@ requirements.txt
 .streamlit/config.toml
 src/ncav_screener/
 data/app/screener_results_kr.csv
+data/app/screener_results_us.csv
 ```
 
 배포 방법과 주의사항은 [DEPLOY.md](DEPLOY.md)를 참고하세요.
