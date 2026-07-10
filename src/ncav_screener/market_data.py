@@ -112,14 +112,8 @@ def filter_screening_universe(frame: pd.DataFrame) -> pd.DataFrame:
     spac_mask = names.str.contains(SPAC_PATTERN, case=False, regex=True)
     financial_mask = names.str.contains(FINANCIAL_PATTERN, regex=True)
     holding_mask = names.str.contains(HOLDING_PATTERN, case=False, regex=True)
-    if "section" in filtered.columns:
-        sections = filtered["section"].fillna("").astype(str)
-        risk_section_mask = sections.str.contains(RISK_SECTION_PATTERN, regex=True)
-    else:
-        risk_section_mask = False
-
     return filtered.loc[
-        ~(preferred_share_mask | spac_mask | financial_mask | holding_mask | risk_section_mask)
+        ~(preferred_share_mask | spac_mask | financial_mask | holding_mask)
     ].copy()
 
 

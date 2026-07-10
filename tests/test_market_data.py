@@ -35,6 +35,19 @@ def test_filter_screening_universe_does_not_treat_inner_woo_as_preferred_share()
     assert result["ticker"].tolist() == ["088910"]
 
 
+def test_filter_screening_universe_keeps_risk_section_stocks_for_flagging() -> None:
+    frame = pd.DataFrame(
+        [
+            {"ticker": "035610", "name": "솔본", "section": "투자주의환기종목(소속부없음)"},
+            {"ticker": "000001", "name": "정상전자", "section": "우량기업부"},
+        ]
+    )
+
+    result = filter_screening_universe(frame)
+
+    assert result["ticker"].tolist() == ["035610", "000001"]
+
+
 def test_filter_korean_statement_universe_excludes_financial_and_utility_industries() -> None:
     frame = pd.DataFrame(
         [
