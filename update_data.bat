@@ -40,7 +40,6 @@ if exist "data\input\krx_raw.csv" (
 "%PYTHON_EXE%" -m ncav_screener.cli bulk-ncav ^
     --with-ev-ebit ^
     --with-f-score ^
-    --no-default-filters ^
     --max-ratio 1.0 ^
     --max-ev-ebit 5 ^
     --output "data\output\bulk_ncav_ev_ebit_results_fscore.csv" ^

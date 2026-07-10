@@ -21,6 +21,11 @@ SPAC_PATTERN = r"(?:\uc2a4\ud329|SPAC)"
 FINANCIAL_PATTERN = r"(?:\uae08\uc735\uc9c0\uc8fc|\uae08\uc735|\uc740\ud589|\uc99d\uad8c|\uc190\ud574\ubcf4\ud5d8|\uc0dd\uba85\ubcf4\ud5d8|\ubcf4\ud5d8)"
 HOLDING_PATTERN = r"(?:\ud640\ub529\uc2a4|\uc9c0\uc8fc|Holdings)"
 RISK_SECTION_PATTERN = r"(?:\uad00\ub9ac|\ud22c\uc790\uc8fc\uc758|\ud658\uae30|\uac70\ub798\uc815\uc9c0|\uc815\ub9ac\ub9e4\ub9e4)"
+EXCLUDED_INDUSTRY_PATTERN = (
+    r"(?:\uae08\uc735|\uc740\ud589|\uc99d\uad8c|\ubcf4\ud5d8|\uc2e0\ud0c1|\uc5ec\uc2e0|"
+    r"\uce74\ub4dc|\uc804\uae30|\uac00\uc2a4|\uc218\ub3c4|\uc99d\uae30|\uc804\ub825|"
+    r"\ubc1c\uc804|\ub3c4\uc2dc\uac00\uc2a4)"
+)
 
 
 @dataclass(frozen=True)
@@ -116,6 +121,16 @@ def filter_screening_universe(frame: pd.DataFrame) -> pd.DataFrame:
     return filtered.loc[
         ~(preferred_share_mask | spac_mask | financial_mask | holding_mask | risk_section_mask)
     ].copy()
+
+
+def filter_korean_statement_universe(frame: pd.DataFrame) -> pd.DataFrame:
+    filtered = frame.copy()
+    if "industry_name" not in filtered.columns:
+        return filtered
+
+    industries = filtered["industry_name"].fillna("").astype(str)
+    excluded_industry_mask = industries.str.contains(EXCLUDED_INDUSTRY_PATTERN, regex=True)
+    return filtered.loc[~excluded_industry_mask].copy()
 
 
 def read_krx_raw_csv(raw_path: Path) -> pd.DataFrame:
