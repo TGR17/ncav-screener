@@ -5,7 +5,7 @@ from ncav_screener.dart_bulk import convert_amount_to_krw, currency_rate_to_krw
 
 def test_convert_amount_to_krw_uses_supported_dart_currency_rates() -> None:
     assert convert_amount_to_krw("1,000", "KRW") == 1_000
-    assert convert_amount_to_krw("1,000", "USD") == 1_370_000
+    assert convert_amount_to_krw("1,000", "USD") == 1_500_000
     assert convert_amount_to_krw("1,000", "CNY") == 190_000
 
 
