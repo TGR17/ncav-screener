@@ -511,6 +511,27 @@ def format_won_plain(value: object) -> str:
         return str(value)
 
 
+def get_cash_market_cap_ratio(row: pd.Series) -> float | None:
+    ratio = row.get(COL_CASH_MARKET_CAP_RATIO)
+    if pd.notna(ratio):
+        try:
+            return float(ratio)
+        except (TypeError, ValueError):
+            pass
+
+    cash = row.get(COL_CASH)
+    market_cap = row.get(COL_MARKET_CAP)
+    if pd.isna(cash) or pd.isna(market_cap):
+        return None
+    try:
+        market_cap_value = float(market_cap)
+        if market_cap_value == 0:
+            return None
+        return float(cash) / market_cap_value
+    except (TypeError, ValueError):
+        return None
+
+
 METRIC_HELP = {
     "시가총액": "현재 주식시장에서 평가되는 회사 전체 가치입니다. 주가에 상장주식수를 곱한 값입니다.",
     "NCAV": "유동자산에서 부채총계를 뺀 값입니다. 청산가치에 가까운 보수적인 순유동자산 지표입니다.",
@@ -1038,10 +1059,10 @@ def render_table(df: pd.DataFrame) -> None:
         COL_NCAV_RATIO,
         COL_EV_EBIT,
         COL_CONSERVATIVE_EV_EBIT,
-        f"{COL_CASH_MARKET_CAP_RATIO}(%)",
         COL_F_SCORE,
         f"{COL_OPERATING_MARGIN}(%)",
         money_display_column(COL_MARKET_CAP),
+        f"{COL_CASH_MARKET_CAP_RATIO}(%)",
         COL_CODE,
         COL_MARKET,
         money_display_column(COL_EBIT_TTM),
@@ -1107,7 +1128,7 @@ def render_detail(df: pd.DataFrame) -> None:
     render_metric(c14, "유동자산", format_won_uk(row.get(COL_CURRENT_ASSETS)))
     render_metric(c15, "현금성자산", format_won_uk(row.get(COL_CASH)))
     render_metric(c16, "TTM EBIT", format_won_uk(row.get(COL_EBIT_TTM)))
-    render_metric(c17, "현금성자산/시가총액", format_percent(row.get(COL_CASH_MARKET_CAP_RATIO)))
+    render_metric(c17, "현금성자산/시가총액", format_percent(get_cash_market_cap_ratio(row)))
 
     c18, c19, c20, c21 = st.columns(4)
     render_metric(c18, "부채총계", format_won_uk(row.get(COL_LIABILITIES)))
