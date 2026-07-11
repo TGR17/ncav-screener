@@ -34,7 +34,6 @@ COL_NCAV = "NCAV"
 COL_NCAV_PER_SHARE = "주당 NCAV"
 COL_NCAV_RATIO = "NCAV 배율"
 COL_CASH = "현금및현금성자산"
-COL_CASH_MARKET_CAP_RATIO = "현금성자산/시가총액"
 COL_DEBT = "이자발생부채"
 COL_OTHER_FINANCIAL_LIABILITIES = "기타금융부채"
 COL_EBIT_TTM = "TTM EBIT"
@@ -359,7 +358,6 @@ def normalize_us_frame(frame: pd.DataFrame) -> pd.DataFrame:
 def normalize_frame(frame: pd.DataFrame) -> pd.DataFrame:
     for column in [
         COL_NCAV_RATIO,
-        COL_CASH_MARKET_CAP_RATIO,
         COL_EV_EBIT,
         COL_PER,
         COL_PBR,
@@ -378,10 +376,6 @@ def normalize_frame(frame: pd.DataFrame) -> pd.DataFrame:
     ]:
         if column in frame.columns:
             frame[column] = pd.to_numeric(frame[column], errors="coerce")
-    if COL_CASH in frame.columns and COL_MARKET_CAP in frame.columns:
-        market_cap = pd.to_numeric(frame[COL_MARKET_CAP], errors="coerce")
-        cash = pd.to_numeric(frame[COL_CASH], errors="coerce")
-        frame[COL_CASH_MARKET_CAP_RATIO] = cash / market_cap.where(market_cap != 0)
     return frame
 
 
@@ -393,8 +387,6 @@ def add_display_columns(df: pd.DataFrame) -> pd.DataFrame:
     for column in [COL_ROE, COL_ROA, COL_ROIC, COL_OPERATING_MARGIN]:
         if column in output.columns:
             output[f"{column}(%)"] = output[column] * 100
-    if COL_CASH_MARKET_CAP_RATIO in output.columns:
-        output[f"{COL_CASH_MARKET_CAP_RATIO}(%)"] = output[COL_CASH_MARKET_CAP_RATIO] * 100
     return output
 
 
@@ -515,7 +507,6 @@ METRIC_HELP = {
     "시가총액": "현재 주식시장에서 평가되는 회사 전체 가치입니다. 주가에 상장주식수를 곱한 값입니다.",
     "NCAV": "유동자산에서 부채총계를 뺀 값입니다. 청산가치에 가까운 보수적인 순유동자산 지표입니다.",
     "NCAV 배율": "시가총액을 NCAV로 나눈 값입니다. 1보다 낮으면 시가총액이 순유동자산보다 낮다는 뜻입니다.",
-    "현금성자산/시가총액": "현금 및 현금성자산을 시가총액으로 나눈 비율입니다. 높을수록 현재 시장가치 대비 회사가 보유한 현금성 자산이 많다는 뜻입니다.",
     "EV/EBIT": "기업가치(EV)를 영업이익(TTM EBIT)으로 나눈 값입니다. 낮을수록 영업이익 대비 기업가치가 낮게 평가된 상태로 볼 수 있습니다.",
     "보수 EV": "기본 EV에 기타금융부채를 더한 값입니다. 기타금융부채를 모두 부채로 보는 더 보수적인 기업가치입니다.",
     "보수 EV/EBIT": "보수 EV를 최근 12개월 영업이익으로 나눈 값입니다. 기타금융부채가 큰 기업의 위험을 더 넓게 보기 위한 참고값입니다.",
@@ -1038,7 +1029,6 @@ def render_table(df: pd.DataFrame) -> None:
         COL_NCAV_RATIO,
         COL_EV_EBIT,
         COL_CONSERVATIVE_EV_EBIT,
-        f"{COL_CASH_MARKET_CAP_RATIO}(%)",
         COL_F_SCORE,
         f"{COL_OPERATING_MARGIN}(%)",
         money_display_column(COL_MARKET_CAP),
@@ -1107,7 +1097,7 @@ def render_detail(df: pd.DataFrame) -> None:
     render_metric(c14, "유동자산", format_won_uk(row.get(COL_CURRENT_ASSETS)))
     render_metric(c15, "현금성자산", format_won_uk(row.get(COL_CASH)))
     render_metric(c16, "TTM EBIT", format_won_uk(row.get(COL_EBIT_TTM)))
-    render_metric(c17, "현금성자산/시가총액", format_percent(row.get(COL_CASH_MARKET_CAP_RATIO)))
+    render_metric(c17, "EPS", format_number(row.get(COL_EPS)))
 
     c18, c19, c20, c21 = st.columns(4)
     render_metric(c18, "부채총계", format_won_uk(row.get(COL_LIABILITIES)))
