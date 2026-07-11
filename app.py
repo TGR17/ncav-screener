@@ -434,12 +434,22 @@ def style_dataframe_for_theme(df: pd.DataFrame):
 
 
 def render_themed_table(df: pd.DataFrame, max_height: int = 420) -> None:
+    display = make_arrow_safe_dataframe(df)
     st.dataframe(
-        df,
-        use_container_width=True,
+        display,
+        width="stretch",
         hide_index=True,
         height=max_height,
     )
+
+
+def make_arrow_safe_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+    output = df.copy()
+    for column in output.columns:
+        if pd.api.types.is_object_dtype(output[column]):
+            output[column] = output[column].map(lambda value: "" if pd.isna(value) else str(value))
+    return output
+
 
 def format_won_uk(value: float | int | str | None) -> str:
     if pd.isna(value):
