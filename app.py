@@ -1244,7 +1244,6 @@ def render_industry_summary(df: pd.DataFrame) -> None:
         }
     )
 
-    st.bar_chart(summary.set_index(COL_INDUSTRY)["stock_count"])
     render_themed_table(display, max_height=360)
 
 def main() -> None:
@@ -1253,17 +1252,13 @@ def main() -> None:
     apply_theme(theme)
 
     st.title("NCAV Screener")
-    market = st.sidebar.radio("시장", [MARKET_KR, MARKET_US], index=0, horizontal=True, key="market_choice")
-    if market == MARKET_US:
-        st.caption("SEC/Nasdaq 데이터를 바탕으로 계산한 미국 주식 투자 판단 보조용 스크리너입니다. 최종 판단은 원문 공시와 최신 시세를 함께 확인해 주세요.")
-    else:
-        st.caption("DART/KRX 원본 데이터를 바탕으로 계산한 한국 주식 투자 판단 보조용 스크리너입니다. 최종 판단은 원문 공시와 최신 시세를 함께 확인해 주세요.")
+    market = MARKET_KR
+    st.session_state["market_choice"] = MARKET_KR
+    st.sidebar.caption("시장: 한국")
+    st.caption("DART/KRX 원본 데이터를 바탕으로 계산한 한국 주식 투자 판단 보조용 스크리너입니다. 최종 판단은 원문 공시와 최신 시세를 함께 확인해 주세요.")
 
     st.sidebar.header("데이터")
-    if market == MARKET_US:
-        default_path = US_CANDIDATES
-    else:
-        default_path = DEFAULT_CANDIDATES if DEFAULT_CANDIDATES.exists() else LOCAL_OUTPUT_CANDIDATES
+    default_path = DEFAULT_CANDIDATES if DEFAULT_CANDIDATES.exists() else LOCAL_OUTPUT_CANDIDATES
     if st.sidebar.button("데이터 다시 읽기"):
         st.cache_data.clear()
 
