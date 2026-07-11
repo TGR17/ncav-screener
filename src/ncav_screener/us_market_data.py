@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-import re
 
 import pandas as pd
 import requests
@@ -11,7 +10,7 @@ from .sec_client import normalize_sec_ticker
 
 REQUIRED_COLUMNS = {"ticker", "market_cap"}
 OPTIONAL_COLUMNS = ["name", "exchange", "price", "shares_outstanding"]
-DEFAULT_EXCLUDED_SECTORS = {"Finance", "Real Estate", "Utilities"}
+DEFAULT_EXCLUDED_SECTORS = {"Finance", "Real Estate"}
 DEFAULT_EXCLUDED_NAME_KEYWORDS = (
     "acquisition",
     "adr",
@@ -22,26 +21,6 @@ DEFAULT_EXCLUDED_NAME_KEYWORDS = (
     "etf",
     "exchange traded",
     "fund",
-    "holding",
-    "holdings",
-    "bank",
-    "bancorp",
-    "financial",
-    "insurance",
-    "insurer",
-    "reinsurance",
-    "asset management",
-    "investment management",
-    "investment managers",
-    "capital management",
-    "wealth management",
-    "broker",
-    "brokers",
-    "mortgage",
-    "credit",
-    "loan",
-    "lending",
-    "leasing",
     "note",
     "preferred",
     "right",
@@ -121,13 +100,9 @@ def filter_us_screening_universe(frame: pd.DataFrame) -> pd.DataFrame:
         output = output.loc[~output["sector"].isin(DEFAULT_EXCLUDED_SECTORS)].copy()
 
     name = output["name"].fillna("").astype(str).str.lower() if "name" in output.columns else pd.Series("", index=output.index)
-    keyword_pattern = _keyword_pattern(DEFAULT_EXCLUDED_NAME_KEYWORDS)
+    keyword_pattern = "|".join(DEFAULT_EXCLUDED_NAME_KEYWORDS)
     output = output.loc[~name.str.contains(keyword_pattern, regex=True)].copy()
     return output.reset_index(drop=True)
-
-
-def _keyword_pattern(keywords: tuple[str, ...]) -> str:
-    return "|".join(rf"(?<![a-z0-9]){re.escape(keyword)}(?![a-z0-9])" for keyword in keywords)
 
 
 def _parse_nasdaq_row(row: dict) -> dict:
