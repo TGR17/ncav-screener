@@ -1,11 +1,8 @@
 from __future__ import annotations
 
 from pathlib import Path
-import re
 
 import pandas as pd
-
-from .market_data import RISK_SECTION_PATTERN
 
 
 KOREAN_COLUMN_NAMES = {
@@ -129,10 +126,6 @@ def add_data_notes(frame: pd.DataFrame) -> pd.DataFrame:
         ev = row.get("ev")
         per = row.get("per")
         operating_margin = row.get("operating_margin_current")
-        section = row.get("section")
-
-        if pd.notna(section) and re.search(RISK_SECTION_PATTERN, str(section)):
-            row_notes.append(f"KRX 리스크 소속부: {section}")
 
         if pd.isna(market_cap):
             has_missing = True
