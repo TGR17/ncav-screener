@@ -30,7 +30,7 @@ data/app/screener_results_us.csv
 DART 재무제표 통화가 `KRW`가 아닌 종목은 원화로 환산한 뒤 KRX 시가총액과 비교합니다. 현재 기본 환율은 코드의 `DART_CURRENCY_TO_KRW`에 들어 있습니다.
 
 ```text
-USD = 1,500 KRW
+USD = 1,370 KRW
 CNY = 190 KRW
 ```
 
