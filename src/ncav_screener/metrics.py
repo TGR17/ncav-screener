@@ -44,7 +44,7 @@ def calculate_ev(
 
 
 def calculate_ev_ebit(ev: float, ebit_ttm: float) -> float | None:
-    if ebit_ttm <= 0:
+    if ebit_ttm == 0:
         return None
     return ev / ebit_ttm
 

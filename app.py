@@ -12,7 +12,6 @@ import streamlit as st
 ROOT = Path(__file__).resolve().parent
 INPUT_DIR = ROOT / "data" / "input"
 DEFAULT_CANDIDATES = ROOT / "data" / "app" / "screener_results_kr.csv"
-US_CANDIDATES = ROOT / "data" / "app" / "screener_results_us.csv"
 LOCAL_OUTPUT_CANDIDATES = ROOT / "data" / "app" / "bulk_all_results_fscore_kr.csv"
 MARKET_DATA_PATH = INPUT_DIR / "market_data.csv"
 FUNDAMENTALS_PATH = INPUT_DIR / "krx_fundamental.csv"
@@ -62,9 +61,6 @@ COL_F_DEBT_RATIO_DOWN = "F-score 부채비율 개선"
 COL_F_CURRENT_RATIO_UP = "F-score 유동비율 개선"
 COL_F_GROSS_MARGIN_UP = "F-score 매출총이익률 개선"
 COL_F_ASSET_TURNOVER_UP = "F-score 자산회전율 개선"
-
-MARKET_KR = "한국"
-MARKET_US = "미국"
 
 MONEY_COLUMNS = [
     COL_MARKET_CAP,
@@ -305,54 +301,9 @@ def apply_theme(theme: str) -> None:
 
 
 @st.cache_data(show_spinner=False)
-def load_csv(path_text: str, modified_ns: int, market: str) -> pd.DataFrame:
-    dtype = {COL_CODE: str} if market == MARKET_KR else {"ticker": str, "cik10": str}
-    frame = pd.read_csv(path_text, dtype=dtype)
-    if market == MARKET_US:
-        frame = normalize_us_frame(frame)
+def load_csv(path_text: str, modified_ns: int) -> pd.DataFrame:
+    frame = pd.read_csv(path_text, dtype={COL_CODE: str})
     return normalize_frame(frame)
-
-
-def normalize_us_frame(frame: pd.DataFrame) -> pd.DataFrame:
-    output = frame.copy()
-    rename_map = {
-        "ticker": COL_CODE,
-        "name": COL_NAME,
-        "exchange": COL_MARKET,
-        "industry": COL_INDUSTRY,
-        "price": COL_CLOSE,
-        "volume": COL_VOLUME,
-        "market_cap": COL_MARKET_CAP,
-        "shares_outstanding": COL_SHARES,
-        "current_assets": COL_CURRENT_ASSETS,
-        "total_liabilities": COL_LIABILITIES,
-        "ncav": COL_NCAV,
-        "ncav_per_share": COL_NCAV_PER_SHARE,
-        "ncav_ratio": COL_NCAV_RATIO,
-        "cash_and_equivalents": COL_CASH,
-        "interest_bearing_debt": COL_DEBT,
-        "other_financial_liabilities": COL_OTHER_FINANCIAL_LIABILITIES,
-        "ebit_ttm": COL_EBIT_TTM,
-        "ev": COL_EV,
-        "ev_ebit": COL_EV_EBIT,
-        "conservative_ev": COL_CONSERVATIVE_EV,
-        "conservative_ev_ebit": COL_CONSERVATIVE_EV_EBIT,
-        "data_status": COL_DATA_STATUS,
-        "data_note": COL_DATA_NOTE,
-    }
-    output = output.rename(columns=rename_map)
-    if COL_INDUSTRY not in output.columns and "sector" in output.columns:
-        output[COL_INDUSTRY] = output["sector"]
-    elif "sector" in output.columns:
-        output[COL_INDUSTRY] = output[COL_INDUSTRY].fillna(output["sector"])
-
-    if COL_OTHER_FINANCIAL_LIABILITIES not in output.columns:
-        output[COL_OTHER_FINANCIAL_LIABILITIES] = 0
-    if COL_CONSERVATIVE_EV not in output.columns and COL_EV in output.columns:
-        output[COL_CONSERVATIVE_EV] = output[COL_EV]
-    if COL_CONSERVATIVE_EV_EBIT not in output.columns and COL_EV_EBIT in output.columns:
-        output[COL_CONSERVATIVE_EV_EBIT] = output[COL_EV_EBIT]
-    return output
 
 
 def normalize_frame(frame: pd.DataFrame) -> pd.DataFrame:
@@ -383,7 +334,7 @@ def add_display_columns(df: pd.DataFrame) -> pd.DataFrame:
     output = df.copy()
     for column in MONEY_COLUMNS:
         if column in output.columns:
-            output[money_display_column(column)] = output[column] / money_scale()
+            output[f"{column}(억원)"] = output[column] / 100_000_000
     for column in [COL_ROE, COL_ROA, COL_ROIC, COL_OPERATING_MARGIN]:
         if column in output.columns:
             output[f"{column}(%)"] = output[column] * 100
@@ -437,25 +388,9 @@ def format_won_uk(value: float | int | str | None) -> str:
     if pd.isna(value):
         return "-"
     try:
-        return f"{float(value) / money_scale():,.1f}{money_unit()}"
+        return f"{float(value) / 100_000_000:,.1f}억원"
     except (TypeError, ValueError):
         return str(value)
-
-
-def current_market() -> str:
-    return st.session_state.get("market_choice", MARKET_KR)
-
-
-def money_scale() -> int:
-    return 100_000_000 if current_market() == MARKET_KR else 1_000_000
-
-
-def money_unit() -> str:
-    return "억원" if current_market() == MARKET_KR else "백만달러"
-
-
-def money_display_column(column: str) -> str:
-    return f"{column}({money_unit()})"
 
 
 def format_number(value: float | int | str | None) -> str:
@@ -678,7 +613,7 @@ def extract_dart_generation_dates() -> list[str]:
     return sorted(dates)
 
 
-def render_data_info(path: Path | None, uploaded: bool, market: str) -> None:
+def render_data_info(path: Path | None, uploaded: bool) -> None:
     source_name = "업로드 CSV" if uploaded else path.name if path else "-"
     source_time = "-" if uploaded or path is None else format_file_time(path)
     dart_dates = extract_dart_generation_dates()
@@ -686,35 +621,20 @@ def render_data_info(path: Path | None, uploaded: bool, market: str) -> None:
 
     with st.expander("데이터 기준 정보", expanded=False):
         c1, c2, c3, c4 = st.columns(4)
-        if market == MARKET_US:
-            sec_zip = INPUT_DIR / "sec_bulk" / "companyfacts.zip"
-            us_market_data = INPUT_DIR / "us_market_data.csv"
-            c1.metric("SEC 재무제표", "companyfacts.zip")
-            c2.metric("SEC ZIP 수정", format_file_time(sec_zip))
-            c3.metric("미국 시장 데이터", "Nasdaq")
-            c4.metric("시장 CSV 수정", format_file_time(us_market_data))
-            st.caption(
-                "재무제표: SEC companyfacts.zip의 US-GAAP XBRL 데이터를 사용했습니다. "
-                "TTM EBIT은 최신 연간 영업이익에서 전년 동기 누적값을 빼고 최신 누적값을 더해 계산합니다."
-            )
-            st.caption(
-                "시장 데이터: 주가, 시가총액, 거래량, 섹터와 업종은 Nasdaq screener 데이터를 사용했습니다. "
-                "상장주식수는 시가총액 / 주가로 추정한 값입니다."
-            )
-        else:
-            c1.metric("DART 재무제표", "2026 1Q / 2025")
-            c2.metric("DART 파일 생성일", dart_date_text)
-            c3.metric("KRX 투자지표", KRX_DATA_DATE_TEXT)
-            c4.metric("KRX 시세", KRX_DATA_DATE_TEXT)
-            st.caption(
-                "재무제표: DART 2026년 1분기 재무제표와 "
-                "2025년 연간/분기 손익계산서를 사용했습니다. "
-                "ROE/ROA는 TTM 순이익과 평균 자본/자산 기준으로, ROIC는 TTM EBIT과 투하자본 기준으로 계산했습니다. 영업이익률과 F-score는 분기 재무제표 기준입니다."
-            )
-            st.caption(
-                "시장 데이터: 시가총액과 거래 관련 값은 KRX 시세 파일을 사용했고, "
-                "PER/PBR/EPS/BPS/배당수익률은 KRX 투자지표 CSV를 붙인 값입니다."
-            )
+        c1.metric("DART 재무제표", "2026 1Q / 2025")
+        c2.metric("DART 파일 생성일", dart_date_text)
+        c3.metric("KRX 투자지표", KRX_DATA_DATE_TEXT)
+        c4.metric("KRX 시세", KRX_DATA_DATE_TEXT)
+
+        st.caption(
+            "재무제표: DART 2026년 1분기 재무제표와 "
+            "2025년 연간/분기 손익계산서를 사용했습니다. "
+            "ROE/ROA는 TTM 순이익과 평균 자본/자산 기준으로, ROIC는 TTM EBIT과 투하자본 기준으로 계산했습니다. 영업이익률과 F-score는 분기 재무제표 기준입니다."
+        )
+        st.caption(
+            "시장 데이터: 시가총액과 거래 관련 값은 KRX 시세 파일을 사용했고, "
+            "PER/PBR/EPS/BPS/배당수익률은 KRX 투자지표 CSV를 붙인 값입니다."
+        )
         st.caption(
             f"앱 표시용 결과 파일: {source_name} | 수정 시간: {source_time}"
         )
@@ -747,16 +667,16 @@ def sidebar_filters(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, object]]:
     )
     filter_state["시가총액"] = "미사용"
     if market_cap_enabled:
-        market_cap_min_display = st.sidebar.number_input(
-            f"시가총액 최소({money_unit()})",
+        market_cap_min_uk = st.sidebar.number_input(
+            "시가총액 최소(억원)",
             min_value=0,
             max_value=1_000_000,
             value=200,
             step=50,
-            help=f"{money_unit()} 단위로 입력합니다.",
+            help="억원 단위로 입력합니다. 예: 200은 시가총액 200억 원 이상을 뜻합니다.",
         )
-        filter_state["시가총액"] = f"{market_cap_min_display:,}{money_unit()} 이상"
-        filtered = filtered.loc[filtered[COL_MARKET_CAP] >= market_cap_min_display * money_scale()]
+        filter_state["시가총액"] = f"{market_cap_min_uk:,}억원 이상"
+        filtered = filtered.loc[filtered[COL_MARKET_CAP] >= market_cap_min_uk * 100_000_000]
 
     sidebar_section("밸류 팩터")
     ncav_enabled = st.sidebar.checkbox(
@@ -814,35 +734,6 @@ def sidebar_filters(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, object]]:
         ]
     else:
         filter_state["EV/EBIT"] = "미사용"
-
-    if COL_CONSERVATIVE_EV_EBIT in filtered.columns and filtered[COL_CONSERVATIVE_EV_EBIT].notna().any():
-        conservative_ev_ebit_enabled = st.sidebar.checkbox(
-            "보수 EV/EBIT 필터 사용",
-            value=True,
-            help=(
-                "켜면 보수 EV/EBIT 범위에 들어오는 종목만 봅니다. "
-                "기타금융부채까지 반영한 더 보수적인 기업가치 기준입니다."
-            ),
-        )
-        if conservative_ev_ebit_enabled:
-            conservative_ev_min, conservative_ev_max = st.sidebar.slider(
-                "보수 EV/EBIT",
-                min_value=-100.0,
-                max_value=20.0,
-                value=(-100.0, 5.0),
-                step=0.5,
-                help=(
-                    "보수 EV/EBIT는 보수 EV를 최근 12개월 영업이익으로 나눈 값입니다. "
-                    "기타금융부채가 큰 기업은 기본 EV/EBIT보다 높게 나타날 수 있습니다."
-                ),
-            )
-            filter_state["보수 EV/EBIT"] = f"{conservative_ev_min:.1f} ~ {conservative_ev_max:.1f}"
-            filtered = filtered.loc[
-                (filtered[COL_CONSERVATIVE_EV_EBIT] >= conservative_ev_min)
-                & (filtered[COL_CONSERVATIVE_EV_EBIT] <= conservative_ev_max)
-            ]
-        else:
-            filter_state["보수 EV/EBIT"] = "미사용"
 
     if COL_PER in filtered.columns and filtered[COL_PER].notna().any():
         per_enabled = st.sidebar.checkbox(
@@ -1031,13 +922,13 @@ def render_table(df: pd.DataFrame) -> None:
         COL_CONSERVATIVE_EV_EBIT,
         COL_F_SCORE,
         f"{COL_OPERATING_MARGIN}(%)",
-        money_display_column(COL_MARKET_CAP),
+        f"{COL_MARKET_CAP}(억원)",
         COL_CODE,
         COL_MARKET,
-        money_display_column(COL_EBIT_TTM),
-        money_display_column(COL_EV),
-        money_display_column(COL_CONSERVATIVE_EV),
-        money_display_column(COL_TRADING_VALUE),
+        f"{COL_EBIT_TTM}(억원)",
+        f"{COL_EV}(억원)",
+        f"{COL_CONSERVATIVE_EV}(억원)",
+        f"{COL_TRADING_VALUE}(억원)",
         COL_DATA_STATUS,
         COL_DATA_NOTE,
     ]
@@ -1155,7 +1046,7 @@ def render_industry_summary(df: pd.DataFrame) -> None:
         .reset_index()
         .sort_values(["stock_count", "avg_ncav_ratio"], ascending=[False, True])
     )
-    summary["market_cap_sum_display"] = summary["market_cap_sum"] / money_scale()
+    summary["market_cap_sum_uk"] = summary["market_cap_sum"] / 100_000_000
 
     display = pd.DataFrame(
         {
@@ -1163,7 +1054,7 @@ def render_industry_summary(df: pd.DataFrame) -> None:
             "종목 수": summary["stock_count"],
             "평균 NCAV 배율": summary["avg_ncav_ratio"],
             "평균 EV/EBIT": summary["avg_ev_ebit"],
-            f"시가총액 합계({money_unit()})": summary["market_cap_sum_display"],
+            "시가총액 합계(억원)": summary["market_cap_sum_uk"],
         }
     )
 
@@ -1176,17 +1067,10 @@ def main() -> None:
     apply_theme(theme)
 
     st.title("NCAV Screener")
-    market = st.sidebar.radio("시장", [MARKET_KR, MARKET_US], index=0, horizontal=True, key="market_choice")
-    if market == MARKET_US:
-        st.caption("SEC/Nasdaq 데이터를 바탕으로 계산한 미국 주식 투자 판단 보조용 스크리너입니다. 최종 판단은 원문 공시와 최신 시세를 함께 확인해 주세요.")
-    else:
-        st.caption("DART/KRX 원본 데이터를 바탕으로 계산한 한국 주식 투자 판단 보조용 스크리너입니다. 최종 판단은 원문 공시와 최신 시세를 함께 확인해 주세요.")
+    st.caption("DART/KRX 원본 데이터를 바탕으로 계산한 투자 판단 보조용 스크리너입니다. 최종 투자 판단은 원문 공시와 최신 시세를 함께 확인해 주세요.")
 
     st.sidebar.header("데이터")
-    if market == MARKET_US:
-        default_path = US_CANDIDATES
-    else:
-        default_path = DEFAULT_CANDIDATES if DEFAULT_CANDIDATES.exists() else LOCAL_OUTPUT_CANDIDATES
+    default_path = DEFAULT_CANDIDATES if DEFAULT_CANDIDATES.exists() else LOCAL_OUTPUT_CANDIDATES
     if st.sidebar.button("데이터 다시 읽기"):
         st.cache_data.clear()
 
@@ -1194,7 +1078,7 @@ def main() -> None:
     if not loaded_path.exists():
         st.error(f"CSV 파일을 찾을 수 없습니다: {loaded_path}")
         return
-    df = load_csv(str(loaded_path), loaded_path.stat().st_mtime_ns, market)
+    df = load_csv(str(loaded_path), loaded_path.stat().st_mtime_ns)
     st.caption(f"데이터: {loaded_path}")
 
     required = {COL_CODE, COL_NAME, COL_INDUSTRY, COL_NCAV_RATIO, COL_EV_EBIT}
@@ -1203,7 +1087,7 @@ def main() -> None:
         st.error(f"필수 컬럼이 없습니다: {sorted(missing)}")
         return
 
-    render_data_info(loaded_path, uploaded=False, market=market)
+    render_data_info(loaded_path, uploaded=False)
 
     st.sidebar.header("필터")
     filtered, filter_state = sidebar_filters(df)

@@ -4,17 +4,7 @@ import argparse
 from dataclasses import asdict
 from pathlib import Path
 
-from .config import (
-    INPUT_DIR,
-    MARKET_DATA_CSV,
-    OUTPUT_DIR,
-    SEC_COMPANY_TICKERS_EXCHANGE_JSON,
-    SEC_COMPANYFACTS_DIR,
-    SEC_COMPANYFACTS_ZIP,
-    US_FINANCIAL_CACHE_CSV,
-    US_MARKET_DATA_CSV,
-    load_settings,
-)
+from .config import INPUT_DIR, MARKET_DATA_CSV, OUTPUT_DIR, load_settings
 from .dart_bulk import (
     add_ev_ebit,
     build_ncav_from_bulk_balance_sheet,
@@ -28,20 +18,6 @@ from .fundamentals import load_fundamentals, merge_fundamentals
 from .f_score import build_f_score_from_bulk, merge_f_score
 from .market_data import filter_screening_universe, get_market_data_row, load_market_data
 from .reporting import save_korean_report
-from .sec_client import (
-    companyfacts_cache_path,
-    download_companyfacts,
-    download_company_tickers_exchange,
-    find_company_by_ticker,
-    load_companyfacts,
-    load_company_tickers_exchange,
-    summarize_us_gaap_tags,
-)
-from .us_facts import build_us_financial_snapshot
-from .us_financial_cache import build_us_financial_cache, load_us_financial_cache, save_us_financial_cache
-from .us_market_data import download_nasdaq_us_market_data, filter_us_screening_universe, load_us_market_data
-from .us_reporting import save_us_app_report
-from .us_screener import build_us_screener_results
 from .screener import (
     save_ncav_candidates,
     save_value_candidates,
@@ -110,67 +86,6 @@ def build_parser() -> argparse.ArgumentParser:
     screen.add_argument("--limit", type=int, default=None)
     screen.add_argument("--request-delay", type=float, default=0.0)
     screen.add_argument("--no-default-filters", action="store_true")
-
-    sec_cik = subparsers.add_parser("sec-cik", help="Find SEC CIK by US ticker")
-    sec_cik.add_argument("ticker")
-    sec_cik.add_argument("--cache", type=Path, default=SEC_COMPANY_TICKERS_EXCHANGE_JSON)
-    sec_cik.add_argument("--refresh", action="store_true", help="Download the latest SEC ticker map")
-    sec_cik.add_argument(
-        "--user-agent",
-        default=None,
-        help="SEC request User-Agent. Defaults to SEC_USER_AGENT from .env or a project default.",
-    )
-
-    sec_facts = subparsers.add_parser("sec-facts", help="Download and summarize SEC companyfacts for a ticker")
-    sec_facts.add_argument("ticker")
-    sec_facts.add_argument("--ticker-cache", type=Path, default=SEC_COMPANY_TICKERS_EXCHANGE_JSON)
-    sec_facts.add_argument("--facts-dir", type=Path, default=SEC_COMPANYFACTS_DIR)
-    sec_facts.add_argument("--refresh-tickers", action="store_true", help="Download the latest SEC ticker map")
-    sec_facts.add_argument("--refresh-facts", action="store_true", help="Download the latest companyfacts JSON")
-    sec_facts.add_argument(
-        "--user-agent",
-        default=None,
-        help="SEC request User-Agent. Defaults to SEC_USER_AGENT from .env or a project default.",
-    )
-
-    us_screen = subparsers.add_parser("us-screen", help="Build US screener CSV from SEC facts and US market data")
-    us_screen.add_argument("--market-data", type=Path, default=US_MARKET_DATA_CSV)
-    us_screen.add_argument("--ticker-cache", type=Path, default=SEC_COMPANY_TICKERS_EXCHANGE_JSON)
-    us_screen.add_argument("--facts-dir", type=Path, default=SEC_COMPANYFACTS_DIR)
-    us_screen.add_argument("--companyfacts-zip", type=Path, default=SEC_COMPANYFACTS_ZIP)
-    us_screen.add_argument("--financial-cache", type=Path, default=US_FINANCIAL_CACHE_CSV)
-    us_screen.add_argument("--no-financial-cache", action="store_true")
-    us_screen.add_argument("--output", type=Path, default=OUTPUT_DIR / "screener_results_us.csv")
-    us_screen.add_argument("--app-output", type=Path, default=Path("data/app/screener_results_us.csv"))
-    us_screen.add_argument("--refresh-tickers", action="store_true", help="Download the latest SEC ticker map")
-    us_screen.add_argument("--refresh-facts", action="store_true", help="Download companyfacts JSON for each ticker")
-    us_screen.add_argument("--limit", type=int, default=None)
-    us_screen.add_argument("--request-delay", type=float, default=0.2)
-    us_screen.add_argument("--no-default-filters", action="store_true")
-    us_screen.add_argument(
-        "--user-agent",
-        default=None,
-        help="SEC request User-Agent. Defaults to SEC_USER_AGENT from .env or a project default.",
-    )
-
-    us_market = subparsers.add_parser("us-market-data", help="Download US market data CSV from Nasdaq screener")
-    us_market.add_argument("--output", type=Path, default=US_MARKET_DATA_CSV)
-    us_market.add_argument("--limit", type=int, default=10000)
-
-    us_cache = subparsers.add_parser("us-financial-cache", help="Build reusable US financial snapshot CSV from SEC facts")
-    us_cache.add_argument("--ticker-cache", type=Path, default=SEC_COMPANY_TICKERS_EXCHANGE_JSON)
-    us_cache.add_argument("--facts-dir", type=Path, default=SEC_COMPANYFACTS_DIR)
-    us_cache.add_argument("--companyfacts-zip", type=Path, default=SEC_COMPANYFACTS_ZIP)
-    us_cache.add_argument("--output", type=Path, default=US_FINANCIAL_CACHE_CSV)
-    us_cache.add_argument("--refresh-tickers", action="store_true", help="Download the latest SEC ticker map")
-    us_cache.add_argument("--refresh-facts", action="store_true", help="Download companyfacts JSON for each ticker")
-    us_cache.add_argument("--limit", type=int, default=None)
-    us_cache.add_argument("--request-delay", type=float, default=0.0)
-    us_cache.add_argument(
-        "--user-agent",
-        default=None,
-        help="SEC request User-Agent. Defaults to SEC_USER_AGENT from .env or a project default.",
-    )
 
     bulk = subparsers.add_parser("bulk-ncav", help="Run NCAV screener from DART bulk TXT files")
     bulk.add_argument("--input-dir", type=Path, default=INPUT_DIR)
@@ -262,158 +177,6 @@ def main() -> None:
         print(f"candidates <= {args.max_ratio}: {len(candidates)}")
         print(f"output: {args.output}")
         print(f"candidates output: {args.candidates_output}")
-        return
-
-    if args.command == "sec-cik":
-        if args.refresh or not args.cache.exists():
-            companies = download_company_tickers_exchange(
-                args.cache,
-                user_agent=args.user_agent or settings.sec_user_agent,
-            )
-        else:
-            companies = load_company_tickers_exchange(args.cache)
-
-        company = find_company_by_ticker(args.ticker, companies)
-        if company is None:
-            raise SystemExit(f"SEC ticker not found: {args.ticker}")
-
-        print(f"name: {company.name}")
-        print(f"ticker: {company.ticker}")
-        print(f"exchange: {company.exchange}")
-        print(f"cik: {company.cik}")
-        print(f"cik10: {company.cik10}")
-        print(f"companyfacts: {company.companyfacts_url}")
-        print(f"cache: {args.cache}")
-        return
-
-    if args.command == "sec-facts":
-        if args.refresh_tickers or not args.ticker_cache.exists():
-            companies = download_company_tickers_exchange(
-                args.ticker_cache,
-                user_agent=args.user_agent or settings.sec_user_agent,
-            )
-        else:
-            companies = load_company_tickers_exchange(args.ticker_cache)
-
-        company = find_company_by_ticker(args.ticker, companies)
-        if company is None:
-            raise SystemExit(f"SEC ticker not found: {args.ticker}")
-
-        facts_path = companyfacts_cache_path(args.facts_dir, company.cik)
-        if args.refresh_facts or not facts_path.exists():
-            payload = download_companyfacts(
-                company.cik,
-                facts_path,
-                user_agent=args.user_agent or settings.sec_user_agent,
-            )
-        else:
-            payload = load_companyfacts(facts_path)
-
-        print(f"name: {company.name}")
-        print(f"ticker: {company.ticker}")
-        print(f"exchange: {company.exchange}")
-        print(f"cik10: {company.cik10}")
-        print(f"companyfacts cache: {facts_path}")
-        print("")
-        print("financial snapshot:")
-        snapshot = build_us_financial_snapshot(payload)
-        for key, value in snapshot.items():
-            if isinstance(value, float):
-                print(f"{key}: {value:,.0f}")
-            else:
-                print(f"{key}: {value}")
-        print("")
-        print("core us-gaap tags:")
-        for item in summarize_us_gaap_tags(payload):
-            status = "yes" if item["available"] else "no"
-            value = item["latest_value"]
-            value_text = "-" if value is None else f"{float(value):,.0f}"
-            print(
-                f"{item['tag']}: {status}"
-                f" | units={item['units'] or '-'}"
-                f" | points={item['points']}"
-                f" | latest={value_text}"
-                f" | end={item['latest_end'] or '-'}"
-                f" | form={item['latest_form'] or '-'}"
-            )
-        return
-
-    if args.command == "us-screen":
-        if args.refresh_tickers or not args.ticker_cache.exists():
-            companies = download_company_tickers_exchange(
-                args.ticker_cache,
-                user_agent=args.user_agent or settings.sec_user_agent,
-            )
-        else:
-            companies = load_company_tickers_exchange(args.ticker_cache)
-
-        market_data = load_us_market_data(args.market_data)
-        if not args.no_default_filters:
-            market_data = filter_us_screening_universe(market_data)
-        financial_cache = (
-            load_us_financial_cache(args.financial_cache)
-            if not args.no_financial_cache and args.financial_cache.exists() and not args.refresh_facts
-            else None
-        )
-        result = build_us_screener_results(
-            market_data,
-            companies,
-            args.facts_dir,
-            refresh_facts=args.refresh_facts,
-            user_agent=args.user_agent or settings.sec_user_agent,
-            limit=args.limit,
-            request_delay_seconds=args.request_delay,
-            companyfacts_zip=args.companyfacts_zip,
-            financial_cache=financial_cache,
-        )
-        args.output.parent.mkdir(parents=True, exist_ok=True)
-        result.to_csv(args.output, index=False, encoding="utf-8-sig")
-        app_report = save_us_app_report(args.output, args.app_output)
-
-        ok = int((result["data_status"] == "ok").sum()) if "data_status" in result.columns else 0
-        errors = int((result["data_status"] == "error").sum()) if "data_status" in result.columns else 0
-        print(f"rows: {len(result)}")
-        print(f"ok: {ok}")
-        print(f"errors: {errors}")
-        print(f"market data: {args.market_data}")
-        if financial_cache is not None:
-            print(f"financial cache: {args.financial_cache}")
-        print(f"output: {args.output}")
-        print(f"app output: {args.app_output} ({len(app_report)} rows)")
-        return
-
-    if args.command == "us-financial-cache":
-        if args.refresh_tickers or not args.ticker_cache.exists():
-            companies = download_company_tickers_exchange(
-                args.ticker_cache,
-                user_agent=args.user_agent or settings.sec_user_agent,
-            )
-        else:
-            companies = load_company_tickers_exchange(args.ticker_cache)
-
-        result = build_us_financial_cache(
-            companies,
-            args.facts_dir,
-            refresh_facts=args.refresh_facts,
-            user_agent=args.user_agent or settings.sec_user_agent,
-            limit=args.limit,
-            request_delay_seconds=args.request_delay,
-            companyfacts_zip=args.companyfacts_zip,
-        )
-        save_us_financial_cache(result, args.output)
-        ok = int((result["data_status"] == "ok").sum()) if "data_status" in result.columns else 0
-        errors = int((result["data_status"] == "error").sum()) if "data_status" in result.columns else 0
-        print(f"rows: {len(result)}")
-        print(f"ok: {ok}")
-        print(f"errors: {errors}")
-        print(f"companyfacts zip: {args.companyfacts_zip}")
-        print(f"output: {args.output}")
-        return
-
-    if args.command == "us-market-data":
-        result = download_nasdaq_us_market_data(args.output, limit=args.limit)
-        print(f"rows: {len(result)}")
-        print(f"output: {args.output}")
         return
 
     if args.command == "bulk-ncav":

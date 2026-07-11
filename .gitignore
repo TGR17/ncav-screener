@@ -3,17 +3,12 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
-.pytest_cache_runtime/
-.pytest_tmp/
-.pytest_tmp_*/
-.pytest_cache_runtime_*/
 .ipynb_checkpoints/
 data/cache/
 data/input/
 data/output/
 data/app/*.csv
 !data/app/screener_results_kr.csv
-!data/app/screener_results_us.csv
 notebooks/
 Untitled.ipynb
 TASKS.md

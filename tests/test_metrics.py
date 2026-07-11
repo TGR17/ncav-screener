@@ -34,6 +34,6 @@ def test_ncav_ratio_is_none_when_ncav_is_not_positive() -> None:
     assert calculate_ncav_ratio(market_cap=100, ncav=-1) is None
 
 
-def test_ev_ebit_is_none_when_ebit_is_not_positive() -> None:
-    assert calculate_ev_ebit(ev=100, ebit_ttm=-20) is None
+def test_ev_ebit_allows_negative_ebit() -> None:
+    assert calculate_ev_ebit(ev=100, ebit_ttm=-20) == -5
     assert calculate_ev_ebit(ev=100, ebit_ttm=0) is None
