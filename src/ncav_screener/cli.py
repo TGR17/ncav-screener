@@ -26,12 +26,7 @@ from .dart_bulk import (
 from .dart_client import DartClient
 from .fundamentals import load_fundamentals, merge_fundamentals
 from .f_score import build_f_score_from_bulk, merge_f_score
-from .market_data import (
-    filter_korean_statement_universe,
-    filter_screening_universe,
-    get_market_data_row,
-    load_market_data,
-)
+from .market_data import filter_screening_universe, get_market_data_row, load_market_data
 from .reporting import save_korean_report
 from .sec_client import (
     companyfacts_cache_path,
@@ -432,8 +427,6 @@ def main() -> None:
 
         bulk_ncav = build_ncav_from_bulk_balance_sheet(balance_sheet)
         result = merge_bulk_ncav_with_market_data(bulk_ncav, market_data)
-        if not args.no_default_filters:
-            result = filter_korean_statement_universe(result)
         if args.with_ev_ebit:
             annual_income = [args.annual_income] if args.annual_income else find_income_files_with_separate_fallback(
                 args.input_dir,
