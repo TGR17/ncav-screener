@@ -299,39 +299,6 @@ def apply_theme(theme: str) -> None:
         div[data-testid="stDataFrame"] canvas {{
             background: {colors["table_bg"]};
         }}
-        .ncav-table-wrap {{
-            overflow: auto;
-            border: 1px solid {colors["border"]};
-            border-radius: 8px;
-            background: {colors["table_bg"]};
-        }}
-        .ncav-table-wrap table {{
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.88rem;
-        }}
-        .ncav-table-wrap th {{
-            position: sticky;
-            top: 0;
-            z-index: 1;
-            background: {colors["table_header"]};
-            color: {colors["text"]};
-            font-weight: 700;
-            text-align: left;
-            border-bottom: 1px solid {colors["border"]};
-            padding: 8px 10px;
-            white-space: nowrap;
-        }}
-        .ncav-table-wrap td {{
-            background: {colors["table_bg"]};
-            color: {colors["text"]};
-            border-bottom: 1px solid {colors["border"]};
-            padding: 7px 10px;
-            white-space: nowrap;
-        }}
-        .ncav-table-wrap tr:last-child td {{
-            border-bottom: none;
-        }}
         </style>
         """,
         unsafe_allow_html=True,
@@ -468,14 +435,11 @@ def style_dataframe_for_theme(df: pd.DataFrame):
 
 def render_themed_table(df: pd.DataFrame, max_height: int = 420) -> None:
     display = make_arrow_safe_dataframe(df)
-    table_html = display.to_html(index=False, escape=True, border=0)
-    st.markdown(
-        f"""
-        <div class="ncav-table-wrap" style="max-height: {max_height}px;">
-            {table_html}
-        </div>
-        """,
-        unsafe_allow_html=True,
+    st.dataframe(
+        display,
+        width="stretch",
+        hide_index=True,
+        height=max_height,
     )
 
 
