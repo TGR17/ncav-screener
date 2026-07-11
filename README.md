@@ -39,10 +39,6 @@ update_data.bat
 
 자세한 내용은 [DATA_UPDATE.md](DATA_UPDATE.md)를 참고하세요.
 
-## 프로그램 구조
-
-새 작업 환경에서 프로그램의 작동 방식과 주요 모듈을 파악하려면 [PROGRAM_OVERVIEW.md](PROGRAM_OVERVIEW.md)를 먼저 읽으면 됩니다.
-
 ## 배포
 
 배포 시 핵심 파일은 아래와 같습니다.
