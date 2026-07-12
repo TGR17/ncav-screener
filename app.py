@@ -311,6 +311,7 @@ def normalize_frame(frame: pd.DataFrame) -> pd.DataFrame:
     for column in [
         COL_NCAV_RATIO,
         COL_EV_EBIT,
+        COL_CONSERVATIVE_EV_EBIT,
         COL_PER,
         COL_PBR,
         COL_EPS,
@@ -739,6 +740,31 @@ def sidebar_filters(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, object]]:
     else:
         filter_state["EV/EBIT"] = "미사용"
 
+    if COL_CONSERVATIVE_EV_EBIT in filtered.columns and filtered[COL_CONSERVATIVE_EV_EBIT].notna().any():
+        conservative_ev_ebit_enabled = st.sidebar.checkbox(
+            "보수 EV/EBIT 필터 사용",
+            value=False,
+            help=(
+                "보수 EV는 기타 금융부채까지 포함한 기업가치입니다. "
+                "켜면 보수 EV/EBIT 범위에 들어오는 종목만 봅니다."
+            ),
+        )
+        filter_state["보수 EV/EBIT"] = "미사용"
+        if conservative_ev_ebit_enabled:
+            conservative_ev_min, conservative_ev_max = st.sidebar.slider(
+                "보수 EV/EBIT",
+                min_value=-20.0,
+                max_value=20.0,
+                value=(-20.0, 5.0),
+                step=0.5,
+                help="보수 EV를 최근 12개월 영업이익으로 나눈 값의 범위를 지정합니다.",
+            )
+            filter_state["보수 EV/EBIT"] = f"{conservative_ev_min:.1f} ~ {conservative_ev_max:.1f}"
+            filtered = filtered.loc[
+                (filtered[COL_CONSERVATIVE_EV_EBIT] >= conservative_ev_min)
+                & (filtered[COL_CONSERVATIVE_EV_EBIT] <= conservative_ev_max)
+            ]
+
     if COL_PER in filtered.columns and filtered[COL_PER].notna().any():
         per_enabled = st.sidebar.checkbox(
             "PER 필터 사용",
@@ -923,6 +949,7 @@ def render_table(df: pd.DataFrame) -> None:
         COL_INDUSTRY,
         COL_NCAV_RATIO,
         COL_EV_EBIT,
+        COL_CONSERVATIVE_EV_EBIT,
         COL_F_SCORE,
         f"{COL_MARKET_CAP}(억원)",
         f"{COL_NCAV}(억원)",
