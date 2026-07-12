@@ -474,6 +474,7 @@ METRIC_HELP = {
     "ROA": "최근 12개월 순이익을 평균 총자산으로 나눈 값입니다. 회사가 전체 자산을 얼마나 효율적으로 이익으로 바꾸는지 보여줍니다.",
     "ROIC": "최근 12개월 영업이익을 투하자본으로 나눈 세전 ROIC 근사치입니다. 투하자본 대비 본업 수익성을 보는 지표입니다.",
     "영업이익률": "매출 대비 영업이익입니다. 본업에서 매출을 얼마나 이익으로 남기는지 보여줍니다.",
+    "시가총액 대비 현금성자산": "현금 및 현금성자산을 시가총액으로 나눈 비율입니다.",
     "BPS": "주당순자산입니다. 회사 순자산을 주식 수로 나눈 값입니다.",
 }
 
@@ -483,16 +484,16 @@ def render_metric(container, label: str, value: str) -> None:
     help_icon = ""
     if help_text:
         help_icon = f'<span class="ncav-help" data-tooltip="{escape(help_text)}">?</span>'
+    card_html = (
+        '<div class="ncav-metric-card">'
+        '<div class="ncav-metric-label">'
+        f'<span>{escape(label)}</span>{help_icon}'
+        '</div>'
+        f'<div class="ncav-metric-value">{escape(value)}</div>'
+        '</div>'
+    )
     container.markdown(
-        f"""
-        <div class="ncav-metric-card">
-            <div class="ncav-metric-label">
-                <span>{escape(label)}</span>
-                {help_icon}
-            </div>
-            <div class="ncav-metric-value">{escape(value)}</div>
-        </div>
-        """,
+        card_html,
         unsafe_allow_html=True,
     )
 
