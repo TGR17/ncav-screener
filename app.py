@@ -432,15 +432,15 @@ def format_percent(value: object) -> str:
         return str(value)
 
 
-def format_cash_to_market_cap(cash: object, market_cap: object) -> str:
+def format_current_assets_to_market_cap(current_assets: object, market_cap: object) -> str:
     try:
-        cash_value = float(cash)
+        current_assets_value = float(current_assets)
         market_cap_value = float(market_cap)
     except (TypeError, ValueError):
         return "-"
-    if pd.isna(cash_value) or pd.isna(market_cap_value) or market_cap_value <= 0:
+    if pd.isna(current_assets_value) or pd.isna(market_cap_value) or market_cap_value <= 0:
         return "-"
-    return format_percent(cash_value / market_cap_value)
+    return format_percent(current_assets_value / market_cap_value)
 
 
 def format_won_plain(value: object) -> str:
@@ -474,7 +474,7 @@ METRIC_HELP = {
     "ROA": "최근 12개월 순이익을 평균 총자산으로 나눈 값입니다. 회사가 전체 자산을 얼마나 효율적으로 이익으로 바꾸는지 보여줍니다.",
     "ROIC": "최근 12개월 영업이익을 투하자본으로 나눈 세전 ROIC 근사치입니다. 투하자본 대비 본업 수익성을 보는 지표입니다.",
     "영업이익률": "매출 대비 영업이익입니다. 본업에서 매출을 얼마나 이익으로 남기는지 보여줍니다.",
-    "시가총액 대비 현금성자산": "현금 및 현금성자산을 시가총액으로 나눈 비율입니다.",
+    "시가총액 대비 유동자산": "유동자산을 시가총액으로 나눈 비율입니다.",
     "BPS": "주당순자산입니다. 회사 순자산을 주식 수로 나눈 값입니다.",
 }
 
@@ -1036,8 +1036,8 @@ def render_detail(df: pd.DataFrame) -> None:
     render_metric(c16, "TTM EBIT", format_won_uk(row.get(COL_EBIT_TTM)))
     render_metric(
         c17,
-        "시가총액 대비 현금성자산",
-        format_cash_to_market_cap(row.get(COL_CASH), row.get(COL_MARKET_CAP)),
+        "시가총액 대비 유동자산",
+        format_current_assets_to_market_cap(row.get(COL_CURRENT_ASSETS), row.get(COL_MARKET_CAP)),
     )
 
     c18, c19, c20, c21 = st.columns(4)
