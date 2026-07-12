@@ -53,6 +53,7 @@ COL_ROIC = "ROIC"
 COL_OPERATING_MARGIN = "영업이익률"
 COL_DATA_STATUS = "데이터 상태"
 COL_DATA_NOTE = "계산 제외/누락 사유"
+COL_FINANCIAL_CURRENCY = "재무제표 통화"
 COL_MARKET_DATA_FOUND = "KRX 시세 매칭"
 COL_F_ROA_POSITIVE = "F-score ROA 양수"
 COL_F_CFO_POSITIVE = "F-score CFO 양수"
@@ -648,6 +649,10 @@ def render_data_info(path: Path | None, uploaded: bool) -> None:
 def sidebar_filters(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, object]]:
     filtered = df.copy()
     filter_state: dict[str, object] = {}
+
+    if COL_FINANCIAL_CURRENCY in filtered.columns:
+        currencies = filtered[COL_FINANCIAL_CURRENCY].fillna("KRW").astype(str).str.strip().str.upper()
+        filtered = filtered.loc[currencies != "CNY"].copy()
 
     sidebar_section("기본 조건")
     query = st.sidebar.text_input("종목 검색", "")

@@ -256,8 +256,10 @@ def save_ncav_candidates(
     if "ncav_ratio" not in results.columns:
         candidates = results.head(0).copy()
     else:
+        currency_allowed = _non_cny_currency_mask(results)
         candidates = results.loc[
             (results["status"] == "ok")
+            & currency_allowed
             & (results["ncav_ratio"].notna())
             & (results["ncav_ratio"] <= max_ratio)
         ].copy()
@@ -278,8 +280,10 @@ def save_value_candidates(
     if not required.issubset(results.columns):
         candidates = results.head(0).copy()
     else:
+        currency_allowed = _non_cny_currency_mask(results)
         candidates = results.loc[
             (results["status"] == "ok")
+            & currency_allowed
             & (results["ncav_ratio"].notna())
             & (results["ncav_ratio"] <= max_ncav_ratio)
             & (results["ebit_ttm"].notna())
@@ -293,6 +297,13 @@ def save_value_candidates(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     candidates.to_csv(output_path, index=False, encoding="utf-8-sig")
     return candidates
+
+
+def _non_cny_currency_mask(results: pd.DataFrame) -> pd.Series:
+    if "financial_currency" not in results.columns:
+        return pd.Series(True, index=results.index)
+    currencies = results["financial_currency"].fillna("KRW").astype(str).str.strip().str.upper()
+    return currencies != "CNY"
 
 
 def sanitize_error_message(message: str) -> str:
