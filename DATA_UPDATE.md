@@ -41,6 +41,19 @@ data/app/screener_results_kr.csv
 
 앱이 이미 켜져 있다면 왼쪽의 `데이터 다시 읽기` 버튼을 누르면 됩니다.
 
+## 비원화 DART 재무제표
+
+DART 원본 재무제표의 `통화`가 `KRW`가 아닌 종목은 원화로 환산한 뒤 KRX 시가총액과 비교합니다. 예를 들어 두산밥캣처럼 DART 재무제표가 `USD` 기준이면 자산, 부채, EBIT, 순이익 등을 원화로 바꾼 뒤 NCAV와 EV/EBIT을 계산합니다.
+
+현재 기본 환율은 `src/ncav_screener/dart_bulk.py`의 `DART_CURRENCY_TO_KRW`에 있습니다.
+
+```text
+USD = 1,500 KRW
+CNY = 190 KRW
+```
+
+환율 기준을 바꾸려면 해당 값을 수정한 뒤 `update_data.bat`을 다시 실행하면 됩니다.
+
 ## 새 파일을 받을 때
 
 KRX 시세, PER/PBR, DART 재무제표 원본이 바뀌면 `data/input/` 안의 파일을 새 파일로 교체한 뒤 `update_data.bat`을 실행합니다.

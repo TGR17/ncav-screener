@@ -10,6 +10,7 @@ from .dart_bulk import (
     ACCOUNT_NAME_COLUMN,
     ANNUAL_CURRENT_PERIOD_COLUMN,
     COMPANY_NAME_COLUMN,
+    CURRENCY_COLUMN,
     CURRENT_ASSETS_CODE,
     CURRENT_PERIOD_COLUMN,
     DEBT_CODES,
@@ -19,7 +20,7 @@ from .dart_bulk import (
     is_interest_bearing_debt_account,
     is_interest_bearing_debt_code,
     STOCK_CODE_COLUMN,
-    parse_amount,
+    convert_amount_to_krw,
     read_dart_bulk_statement,
 )
 
@@ -251,7 +252,7 @@ def _build_statement_values(
 ) -> pd.DataFrame:
     raw = read_dart_bulk_statement(path)
     value_column_name = _resolve_value_column(raw, value_column)
-    required = {STOCK_CODE_COLUMN, COMPANY_NAME_COLUMN, ACCOUNT_CODE_COLUMN, value_column_name}
+    required = {STOCK_CODE_COLUMN, COMPANY_NAME_COLUMN, ACCOUNT_CODE_COLUMN, CURRENCY_COLUMN, value_column_name}
     missing = required.difference(raw.columns)
     if missing:
         raise ValueError(f"DART bulk file is missing columns: {sorted(missing)}")
@@ -265,7 +266,11 @@ def _build_statement_values(
         mask = mask | debt_mask
     frame = raw.loc[mask].copy()
     frame["ticker"] = frame[STOCK_CODE_COLUMN].str.replace(r"[\[\]]", "", regex=True).str.zfill(6)
-    frame["amount"] = frame[value_column_name].map(parse_amount)
+    frame["financial_currency"] = frame[CURRENCY_COLUMN].fillna("KRW").astype(str).str.strip()
+    frame["amount"] = frame.apply(
+        lambda row: convert_amount_to_krw(row[value_column_name], row["financial_currency"]),
+        axis=1,
+    )
 
     base = frame[["ticker", COMPANY_NAME_COLUMN]].drop_duplicates("ticker")
     pivot = frame.pivot_table(

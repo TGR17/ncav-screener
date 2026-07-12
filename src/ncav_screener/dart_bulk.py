@@ -13,6 +13,7 @@ INDUSTRY_CODE_COLUMN = "\uc5c5\uc885"
 INDUSTRY_NAME_COLUMN = "\uc5c5\uc885\uba85"
 ACCOUNT_CODE_COLUMN = "\ud56d\ubaa9\ucf54\ub4dc"
 ACCOUNT_NAME_COLUMN = "\ud56d\ubaa9\uba85"
+CURRENCY_COLUMN = "\ud1b5\ud654"
 CURRENT_PERIOD_COLUMN = "\ub2f9\uae30 1\ubd84\uae30\ub9d0"
 ANNUAL_CURRENT_PERIOD_COLUMN = "\ub2f9\uae30"
 Q1_CUMULATIVE_COLUMN = "\ub2f9\uae30 1\ubd84\uae30 \ub204\uc801 "
@@ -131,6 +132,12 @@ DEBT_NAME_EXCLUDE_KEYWORDS = (
 INTEREST_BEARING_DEBT_COLUMN = "__interest_bearing_debt__"
 OTHER_FINANCIAL_LIABILITIES_COLUMN = "__other_financial_liabilities__"
 
+DART_CURRENCY_TO_KRW = {
+    "KRW": 1.0,
+    "USD": 1_500.0,
+    "CNY": 190.0,
+}
+
 
 def is_interest_bearing_debt_code(account_code: object) -> bool:
     if account_code is None or pd.isna(account_code):
@@ -226,6 +233,7 @@ def build_ncav_from_bulk_balance_sheet(path: Path) -> pd.DataFrame:
         INDUSTRY_CODE_COLUMN,
         INDUSTRY_NAME_COLUMN,
         ACCOUNT_CODE_COLUMN,
+        CURRENCY_COLUMN,
         CURRENT_PERIOD_COLUMN,
     }
     missing = required.difference(raw.columns)
@@ -235,7 +243,12 @@ def build_ncav_from_bulk_balance_sheet(path: Path) -> pd.DataFrame:
     frame = raw.copy()
     frame["ticker"] = frame[STOCK_CODE_COLUMN].str.replace(r"[\[\]]", "", regex=True).str.strip()
     frame = frame.loc[frame["ticker"].str.fullmatch(r"\d{6}", na=False)].copy()
-    frame["amount"] = frame[CURRENT_PERIOD_COLUMN].map(parse_amount)
+    frame["financial_currency"] = frame[CURRENCY_COLUMN].fillna("KRW").astype(str).str.strip()
+    frame["currency_rate_to_krw"] = frame["financial_currency"].map(currency_rate_to_krw)
+    frame["amount"] = frame.apply(
+        lambda row: convert_amount_to_krw(row[CURRENT_PERIOD_COLUMN], row["financial_currency"]),
+        axis=1,
+    )
 
     key_codes = {
         CURRENT_ASSETS_CODE,
@@ -256,6 +269,8 @@ def build_ncav_from_bulk_balance_sheet(path: Path) -> pd.DataFrame:
             MARKET_COLUMN,
             INDUSTRY_CODE_COLUMN,
             INDUSTRY_NAME_COLUMN,
+            "financial_currency",
+            "currency_rate_to_krw",
         ]
     ].drop_duplicates("ticker")
 
@@ -305,6 +320,8 @@ def build_ncav_from_bulk_balance_sheet(path: Path) -> pd.DataFrame:
         "market",
         "industry_code",
         "industry_name",
+        "financial_currency",
+        "currency_rate_to_krw",
         "current_assets",
         "total_liabilities",
         "ncav",
@@ -333,16 +350,23 @@ def merge_bulk_ncav_with_market_data(bulk_ncav: pd.DataFrame, market_data: pd.Da
 
 def build_operating_income_from_bulk(path: Path, value_column: str) -> pd.DataFrame:
     raw = read_dart_bulk_statement(path)
-    required = {STOCK_CODE_COLUMN, COMPANY_NAME_COLUMN, ACCOUNT_CODE_COLUMN, value_column}
+    required = {STOCK_CODE_COLUMN, COMPANY_NAME_COLUMN, ACCOUNT_CODE_COLUMN, CURRENCY_COLUMN, value_column}
     missing = required.difference(raw.columns)
     if missing:
         raise ValueError(f"DART income file is missing columns: {sorted(missing)}")
 
     frame = raw.loc[raw[ACCOUNT_CODE_COLUMN] == OPERATING_INCOME_CODE].copy()
     frame["ticker"] = frame[STOCK_CODE_COLUMN].str.replace(r"[\[\]]", "", regex=True).str.zfill(6)
-    frame["operating_income"] = frame[value_column].map(parse_amount)
+    frame["financial_currency"] = frame[CURRENCY_COLUMN].fillna("KRW").astype(str).str.strip()
+    frame["currency_rate_to_krw"] = frame["financial_currency"].map(currency_rate_to_krw)
+    frame["operating_income"] = frame.apply(
+        lambda row: convert_amount_to_krw(row[value_column], row["financial_currency"]),
+        axis=1,
+    )
     frame = frame.dropna(subset=["operating_income"])
-    output = frame[["ticker", COMPANY_NAME_COLUMN, "operating_income"]].rename(
+    output = frame[
+        ["ticker", COMPANY_NAME_COLUMN, "financial_currency", "currency_rate_to_krw", "operating_income"]
+    ].rename(
         columns={COMPANY_NAME_COLUMN: "name"}
     )
     return output.sort_values("operating_income", ascending=False).drop_duplicates("ticker")
@@ -446,3 +470,21 @@ def parse_amount(value: object) -> float | None:
     if not text or text == "-":
         return None
     return float(text)
+
+
+def currency_rate_to_krw(currency: object) -> float | None:
+    if currency is None or pd.isna(currency):
+        return 1.0
+    normalized = str(currency).strip().upper()
+    return DART_CURRENCY_TO_KRW.get(normalized)
+
+
+def convert_amount_to_krw(value: object, currency: object) -> float | None:
+    amount = parse_amount(value)
+    if amount is None:
+        return None
+
+    rate = currency_rate_to_krw(currency)
+    if rate is None:
+        return None
+    return amount * rate
