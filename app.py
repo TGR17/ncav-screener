@@ -680,6 +680,16 @@ def sidebar_filters(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, object]]:
         )
         filtered = filtered.loc[mask]
 
+    exclude_holdings = st.sidebar.checkbox(
+        "홀딩스 종목 제외",
+        value=False,
+        help="켜면 종목명에 '홀딩스'가 포함된 종목을 제외합니다.",
+    )
+    filter_state["홀딩스 종목"] = "제외" if exclude_holdings else "미사용"
+    if exclude_holdings:
+        holdings_mask = filtered[COL_NAME].astype(str).str.contains("홀딩스", case=False, na=False)
+        filtered = filtered.loc[~holdings_mask]
+
     industries = sorted(filtered[COL_INDUSTRY].dropna().astype(str).unique())
     selected_industries = st.sidebar.multiselect("업종", industries)
     filter_state["업종"] = ", ".join(selected_industries) if selected_industries else "전체"
