@@ -432,6 +432,17 @@ def format_percent(value: object) -> str:
         return str(value)
 
 
+def format_cash_to_market_cap(cash: object, market_cap: object) -> str:
+    try:
+        cash_value = float(cash)
+        market_cap_value = float(market_cap)
+    except (TypeError, ValueError):
+        return "-"
+    if pd.isna(cash_value) or pd.isna(market_cap_value) or market_cap_value <= 0:
+        return "-"
+    return format_percent(cash_value / market_cap_value)
+
+
 def format_won_plain(value: object) -> str:
     if pd.isna(value):
         return "-"
@@ -1022,7 +1033,11 @@ def render_detail(df: pd.DataFrame) -> None:
     render_metric(c14, "유동자산", format_won_uk(row.get(COL_CURRENT_ASSETS)))
     render_metric(c15, "현금성자산", format_won_uk(row.get(COL_CASH)))
     render_metric(c16, "TTM EBIT", format_won_uk(row.get(COL_EBIT_TTM)))
-    render_metric(c17, "EPS", format_number(row.get(COL_EPS)))
+    render_metric(
+        c17,
+        "시가총액 대비 현금성자산",
+        format_cash_to_market_cap(row.get(COL_CASH), row.get(COL_MARKET_CAP)),
+    )
 
     c18, c19, c20, c21 = st.columns(4)
     render_metric(c18, "부채총계", format_won_uk(row.get(COL_LIABILITIES)))
