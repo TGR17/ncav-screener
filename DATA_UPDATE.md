@@ -49,7 +49,7 @@ DART 원본 재무제표의 `통화`가 `KRW`가 아닌 종목은 원화로 환�
 
 ```text
 USD = 1,500 KRW
-CNY = 190 KRW
+CNY = 220 KRW
 ```
 
 환율 기준을 바꾸려면 해당 값을 수정한 뒤 `update_data.bat`을 다시 실행하면 됩니다.

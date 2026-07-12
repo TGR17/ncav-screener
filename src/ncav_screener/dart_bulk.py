@@ -135,7 +135,7 @@ OTHER_FINANCIAL_LIABILITIES_COLUMN = "__other_financial_liabilities__"
 DART_CURRENCY_TO_KRW = {
     "KRW": 1.0,
     "USD": 1_500.0,
-    "CNY": 190.0,
+    "CNY": 220.0,
 }
 
 

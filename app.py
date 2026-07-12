@@ -16,6 +16,7 @@ LOCAL_OUTPUT_CANDIDATES = ROOT / "data" / "app" / "bulk_all_results_fscore_kr.cs
 MARKET_DATA_PATH = INPUT_DIR / "market_data.csv"
 FUNDAMENTALS_PATH = INPUT_DIR / "krx_fundamental.csv"
 KRX_DATA_DATE_TEXT = "2026-07-03"
+DART_CURRENCY_RATE_TEXT = "USD 1,500원, CNY 220원"
 
 COL_CODE = "종목코드"
 COL_NAME = "종목명"
@@ -634,6 +635,9 @@ def render_data_info(path: Path | None, uploaded: bool) -> None:
         st.caption(
             "시장 데이터: 시가총액과 거래 관련 값은 KRX 시세 파일을 사용했고, "
             "PER/PBR/EPS/BPS/배당수익률은 KRX 투자지표 CSV를 붙인 값입니다."
+        )
+        st.caption(
+            f"비원화 DART 재무제표 환산: {DART_CURRENCY_RATE_TEXT}"
         )
         st.caption(
             f"앱 표시용 결과 파일: {source_name} | 수정 시간: {source_time}"
