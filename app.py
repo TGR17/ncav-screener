@@ -63,6 +63,7 @@ COL_F_DEBT_RATIO_DOWN = "F-score 부채비율 개선"
 COL_F_CURRENT_RATIO_UP = "F-score 유동비율 개선"
 COL_F_GROSS_MARGIN_UP = "F-score 매출총이익률 개선"
 COL_F_ASSET_TURNOVER_UP = "F-score 자산회전율 개선"
+COL_CURRENT_ASSETS_TO_MARKET_CAP = "시가총액 대비 유동자산(%)"
 
 MONEY_COLUMNS = [
     COL_MARKET_CAP,
@@ -341,6 +342,9 @@ def add_display_columns(df: pd.DataFrame) -> pd.DataFrame:
     for column in [COL_ROE, COL_ROA, COL_ROIC, COL_OPERATING_MARGIN]:
         if column in output.columns:
             output[f"{column}(%)"] = output[column] * 100
+    if COL_CURRENT_ASSETS in output.columns and COL_MARKET_CAP in output.columns:
+        valid_market_cap = output[COL_MARKET_CAP].where(output[COL_MARKET_CAP] > 0)
+        output[COL_CURRENT_ASSETS_TO_MARKET_CAP] = output[COL_CURRENT_ASSETS] / valid_market_cap * 100
     return output
 
 
@@ -967,6 +971,7 @@ def render_table(df: pd.DataFrame) -> None:
         COL_NCAV_RATIO,
         COL_EV_EBIT,
         COL_CONSERVATIVE_EV_EBIT,
+        COL_CURRENT_ASSETS_TO_MARKET_CAP,
         COL_F_SCORE,
         f"{COL_MARKET_CAP}(억원)",
         f"{COL_NCAV}(억원)",
