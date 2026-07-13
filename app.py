@@ -15,7 +15,7 @@ DEFAULT_CANDIDATES = ROOT / "data" / "app" / "screener_results_kr.csv"
 LOCAL_OUTPUT_CANDIDATES = ROOT / "data" / "app" / "bulk_all_results_fscore_kr.csv"
 MARKET_DATA_PATH = INPUT_DIR / "market_data.csv"
 FUNDAMENTALS_PATH = INPUT_DIR / "krx_fundamental.csv"
-KRX_DATA_DATE_TEXT = "2026-07-03"
+KRX_DATA_DATE_TEXT = "2026-07-13"
 DART_CURRENCY_RATE_TEXT = "USD 1,500원, CNY 220원"
 
 COL_CODE = "종목코드"
@@ -54,6 +54,7 @@ COL_OPERATING_MARGIN = "영업이익률"
 COL_DATA_STATUS = "데이터 상태"
 COL_DATA_NOTE = "계산 제외/누락 사유"
 COL_FINANCIAL_CURRENCY = "재무제표 통화"
+COL_KRX_SOURCE_DATE = "KRX 시세 기준일"
 COL_MARKET_DATA_FOUND = "KRX 시세 매칭"
 COL_F_ROA_POSITIVE = "F-score ROA 양수"
 COL_F_CFO_POSITIVE = "F-score CFO 양수"
@@ -632,18 +633,23 @@ def extract_dart_generation_dates() -> list[str]:
     return sorted(dates)
 
 
-def render_data_info(path: Path | None, uploaded: bool) -> None:
+def render_data_info(path: Path | None, uploaded: bool, df: pd.DataFrame) -> None:
     source_name = "업로드 CSV" if uploaded else path.name if path else "-"
     source_time = "-" if uploaded or path is None else format_file_time(path)
     dart_dates = extract_dart_generation_dates()
     dart_date_text = ", ".join(dart_dates[-3:]) if dart_dates else "-"
+    krx_date_text = KRX_DATA_DATE_TEXT
+    if COL_KRX_SOURCE_DATE in df.columns:
+        krx_dates = df[COL_KRX_SOURCE_DATE].dropna().astype(str).str.strip()
+        if not krx_dates.empty and krx_dates.iloc[0]:
+            krx_date_text = krx_dates.iloc[0]
 
     with st.expander("데이터 기준 정보", expanded=False):
         c1, c2, c3, c4 = st.columns(4)
         c1.metric("DART 재무제표", "2026 1Q / 2025")
         c2.metric("DART 파일 생성일", dart_date_text)
-        c3.metric("KRX 투자지표", KRX_DATA_DATE_TEXT)
-        c4.metric("KRX 시세", KRX_DATA_DATE_TEXT)
+        c3.metric("KRX 투자지표", krx_date_text)
+        c4.metric("KRX 시세", krx_date_text)
 
         st.caption(
             "재무제표: DART 2026년 1분기 재무제표와 "
@@ -1152,7 +1158,7 @@ def main() -> None:
         st.error(f"필수 컬럼이 없습니다: {sorted(missing)}")
         return
 
-    render_data_info(loaded_path, uploaded=False)
+    render_data_info(loaded_path, uploaded=False, df=df)
 
     st.sidebar.header("필터")
     filtered, filter_state = sidebar_filters(df)

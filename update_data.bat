@@ -28,7 +28,7 @@ echo Updating NCAV Screener data...
 echo.
 
 if exist "data\input\krx_raw.csv" (
-    "%PYTHON_EXE%" -c "from pathlib import Path; from ncav_screener.market_data import convert_krx_raw_to_market_data; convert_krx_raw_to_market_data(Path(r'data\input\krx_raw.csv'), Path(r'data\input\market_data.csv'), source_date='2026-07-03'); print('Updated market data: data\\input\\market_data.csv')"
+    "%PYTHON_EXE%" -c "from datetime import date; from pathlib import Path; from ncav_screener.market_data import convert_krx_raw_to_market_data; source_date=date.today().isoformat(); convert_krx_raw_to_market_data(Path(r'data\input\krx_raw.csv'), Path(r'data\input\market_data.csv'), source_date=source_date); print(f'Updated market data ({source_date}): data\\input\\market_data.csv')"
     if errorlevel 1 (
         echo.
         echo KRX raw market data conversion failed.

@@ -336,8 +336,11 @@ def merge_bulk_ncav_with_market_data(bulk_ncav: pd.DataFrame, market_data: pd.Da
     market = market_data.copy()
     market["ticker"] = market["ticker"].astype(str).str.zfill(6)
     market["market_data_found"] = True
+    market_columns = ["ticker", "market_cap", "shares_outstanding", "market_data_found"]
+    if "source_date" in market.columns:
+        market_columns.append("source_date")
     merged = bulk_ncav.merge(
-        market[["ticker", "market_cap", "shares_outstanding", "market_data_found"]],
+        market[market_columns],
         on="ticker",
         how="inner",
     )

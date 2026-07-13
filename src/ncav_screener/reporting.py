@@ -20,6 +20,7 @@ KOREAN_COLUMN_NAMES = {
     "market_cap": "\uc2dc\uac00\ucd1d\uc561",
     "shares_outstanding": "\uc0c1\uc7a5\uc8fc\uc2dd\uc218",
     "market_data_found": "KRX \uc2dc\uc138 \ub9e4\uce6d",
+    "source_date": "KRX \uc2dc\uc138 \uae30\uc900\uc77c",
     "current_assets": "\uc720\ub3d9\uc790\uc0b0",
     "total_liabilities": "\ubd80\ucc44\ucd1d\uacc4",
     "ncav": "NCAV",
